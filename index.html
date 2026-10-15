@@ -1,0 +1,1562 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mekanika Lab</title>
+<meta name="description" content="Aplikasi pendamping buku Mekanika: simulasi interaktif tiap bab.">
+<style>
+:root{
+  --bg:#f6f4ef; --panel:#ffffff; --ink:#1c2230; --muted:#5d6577; --line:#dcd7cc;
+  --accent:#0f6b6b; --accent-soft:#e1efee;
+  --vA:#c0392b; --vB:#1f5fbf; --vR:#1d7a3a; --vD:#8e44ad; --vAcc:#d4790f;
+  --grid:#e9e5dc; --axis:#b9b2a3; --chip:#efeae0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14171d; --panel:#1c2029; --ink:#e7e9ee; --muted:#9aa2b2; --line:#2e3441;
+    --accent:#4fb3b0; --accent-soft:#1f3434;
+    --vA:#ff6b5b; --vB:#5c9cff; --vR:#4cc574; --vD:#c58af0; --vAcc:#ffae4a;
+    --grid:#232834; --axis:#454d5e; --chip:#262b36;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14171d; --panel:#1c2029; --ink:#e7e9ee; --muted:#9aa2b2; --line:#2e3441;
+  --accent:#4fb3b0; --accent-soft:#1f3434;
+  --vA:#ff6b5b; --vB:#5c9cff; --vR:#4cc574; --vD:#c58af0; --vAcc:#ffae4a;
+  --grid:#232834; --axis:#454d5e; --chip:#262b36;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+header a.brand{font-weight:700;color:var(--ink);text-decoration:none;letter-spacing:.2px}
+header a.brand span{color:var(--accent)}
+header .sp{flex:1}
+header button{background:none;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:5px 10px;cursor:pointer}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:1.45rem;margin:.2em 0 .1em}
+h2{font-size:1.1rem;margin:1.2em 0 .5em}
+.muted{color:var(--muted)}
+.code{display:inline-block;font:600 .8rem ui-monospace,Consolas,monospace;background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:6px}
+.chapters{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.ch{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.ch h3{margin:0 0 6px;font-size:.98rem}
+.ch .num{color:var(--accent);font-weight:700;margin-right:6px}
+.ch ul{margin:0;padding-left:0;list-style:none}
+.ch li{margin:4px 0}
+.ch li a{color:var(--ink);text-decoration:none}
+.ch li a:hover{color:var(--accent)}
+.ch .soon{color:var(--muted);font-size:.85rem;font-style:italic}
+.goto{display:flex;gap:8px;margin:12px 0 18px;flex-wrap:wrap}
+.goto input{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);width:160px}
+.goto button,.btn{font:inherit;padding:7px 14px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.simwrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+@media (max-width:820px){.simwrap{grid-template-columns:1fr}}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative}
+canvas{display:block;width:100%;touch-action:none}
+.side{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h4{margin:0 0 8px;font-size:.92rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.row{display:flex;align-items:center;gap:8px;margin:6px 0}
+.row label{flex:1}
+.row input[type=range]{flex:1.4}
+.row output{min-width:52px;text-align:right;font-variant-numeric:tabular-nums}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{font:inherit;font-size:.86rem;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--chip);color:var(--ink);cursor:pointer}
+.seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+table.ro{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.9rem}
+table.ro td{padding:3px 2px;border-bottom:1px dashed var(--line)}
+table.ro td:last-child{text-align:right;font-family:ui-monospace,Consolas,monospace}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.task{background:var(--accent-soft);border-radius:12px;padding:12px 14px;margin-top:14px}
+.task ol{margin:.3em 0 0;padding-left:1.2em}
+.task li{margin:.3em 0}
+.crumb{font-size:.88rem;margin-bottom:6px}
+.crumb a{color:var(--accent);text-decoration:none}
+.hint{position:absolute;left:10px;bottom:8px;font-size:.8rem;color:var(--muted);pointer-events:none}
+footer{max-width:1100px;margin:24px auto;padding:0 16px 24px;color:var(--muted);font-size:.82rem}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="#">Mekanika <span>Lab</span></a>
+  <div class="sp"></div>
+  <button id="themeBtn" title="Ganti tema">◐</button>
+</header>
+<main id="app"></main>
+<footer>Mekanika Lab — aplikasi pendamping buku <i>Mekanika: Dari Newton hingga Lagrange</i>. Pindai kode QR di buku atau ketik kode SIM.</footer>
+
+<script>
+/* ===================== Data buku ===================== */
+const CHAPTERS = [
+  {n:1,  t:"Vektor dan Kinematika", sims:[["SIM-1.1","Penjumlahan & Komponen Vektor"],["SIM-1.2","Perkalian Titik & Silang"],["SIM-1.3","Kinematika Koordinat Polar"]]},
+  {n:2,  t:"Hukum-Hukum Newton", sims:[["SIM-2.1","Bidang Miring dan Gaya Gesek"],["SIM-2.2","Mesin Atwood"]]},
+  {n:3,  t:"Gerak Lurus: Gaya Bergantung Waktu, Posisi, Kecepatan", sims:[["SIM-3.1","Diagram Energi Potensial"],["SIM-3.2","Jatuh dengan Hambatan Udara"]]},
+  {n:4,  t:"Osilator Harmonik Sederhana dan Teredam", sims:[["SIM-4.1","Osilator Pegas dan Bandul"],["SIM-4.2","Osilasi Teredam"]]},
+  {n:5,  t:"Osilasi Paksa dan Resonansi", sims:[["SIM-5.1","Kurva Resonansi"],["SIM-5.2","Transien dan Layangan"]]},
+  {n:6,  t:"Gerak Partikel dalam Tiga Dimensi", sims:[["SIM-6.1","Proyektil dengan Hambatan Udara"],["SIM-6.2","Usaha Sepanjang Lintasan"]]},
+  {n:7,  t:"Kerangka Acuan Non-Inersia", sims:[["SIM-7.1","Bola di Komidi Putar"],["SIM-7.2","Bandul Foucault"]]},
+  {n:8,  t:"Gravitasi", sims:[["SIM-8.1","Medan Gravitasi Bola dan Kulit"],["SIM-8.2","Meriam Newton"]]},
+  {n:9,  t:"Gaya Sentral dan Gerak Planet", sims:[["SIM-9.1","Orbit Kepler dan Hukum Luas"],["SIM-9.2","Potensial Efektif"]]},
+  {n:10, t:"Dinamika Sistem Partikel", sims:[["SIM-10.1","Tumbukan Satu Dimensi"],["SIM-10.2","Roket"]]},
+  {n:11, t:"Benda Tegar: Rotasi terhadap Sumbu Tetap", sims:[["SIM-11.1","Momen Inersia"],["SIM-11.2","Bandul Fisis"]]},
+  {n:12, t:"Benda Tegar: Gerak Bidang dan Menggelinding", sims:[["SIM-12.1","Lomba Menggelinding"],["SIM-12.2","Dari Meluncur ke Menggelinding"]]},
+  {n:13, t:"Mekanika Lagrange I", sims:[["SIM-13.1","Manik pada Cincin Berputar"],["SIM-13.2","Bandul Ganda dan Kekacauan"]]},
+  {n:14, t:"Mekanika Lagrange II", sims:[["SIM-14.1","Osilator Tergandeng dan Mode Normal"],["SIM-14.2","Ruang Fase Bandul"]]},
+];
+const SIMS = {};
+const app = document.getElementById('app');
+let stopCurrent = null;
+
+/* ===================== Tema ===================== */
+const root = document.documentElement;
+try{ const th = localStorage.getItem('ml-theme'); if(th) root.dataset.theme = th; }catch(e){}
+document.getElementById('themeBtn').onclick = () => {
+  const dark = getComputedStyle(root).getPropertyValue('--bg').trim() === '#14171d';
+  root.dataset.theme = dark ? 'light' : 'dark';
+  try{ localStorage.setItem('ml-theme', root.dataset.theme); }catch(e){}
+};
+const css = v => getComputedStyle(root).getPropertyValue(v).trim();
+
+/* ===================== Router ===================== */
+function route(){
+  if(stopCurrent){ stopCurrent(); stopCurrent = null; }
+  const h = decodeURIComponent(location.hash.slice(1)).toUpperCase().replace(/\s/g,'');
+  window.scrollTo(0,0);
+  if(SIMS[h]) return SIMS[h]();
+  home(h);
+}
+window.addEventListener('hashchange', route);
+
+function home(bad){
+  app.innerHTML = `
+  <h1>Simulasi Buku Mekanika</h1>
+  <p class="muted">Setiap simulasi punya kode SIM yang tercetak di buku, misalnya <span class="code">SIM-1.3</span> = Bab 1, simulasi ke-3.</p>
+  <div class="goto"><input id="code" placeholder="Ketik kode, mis. SIM-1.1" value="${bad||''}">
+  <button id="go">Buka</button></div>
+  ${bad ? `<p class="muted">Kode <b>${bad}</b> belum tersedia.</p>`:''}
+  <div class="chapters">${CHAPTERS.map(c=>`
+    <div class="ch"><h3><span class="num">Bab ${c.n}</span>${c.t}</h3>
+    ${c.sims.length? `<ul>${c.sims.map(s=>`<li><a href="#${s[0]}"><span class="code">${s[0]}</span> ${s[1]}</a></li>`).join('')}</ul>`
+      : `<div class="soon">Simulasi menyusul</div>`}</div>`).join('')}
+  </div>`;
+  const go = () => { let v = document.getElementById('code').value.trim().toUpperCase(); if(!v.startsWith('SIM-')) v = 'SIM-'+v; location.hash = v; };
+  document.getElementById('go').onclick = go;
+  document.getElementById('code').onkeydown = e => { if(e.key==='Enter') go(); };
+}
+
+function shell(code, title, chap, tasks){
+  app.innerHTML = `
+  <div class="crumb"><a href="#">← Semua bab</a> · Bab ${chap}</div>
+  <h1><span class="code">${code}</span> ${title}</h1>
+  <div class="simwrap">
+    <div><div class="stage"><canvas id="cv"></canvas><div class="hint" id="hint"></div></div>
+      <div class="task"><b>Coba ini</b><ol>${tasks.map(t=>`<li>${t}</li>`).join('')}</ol></div></div>
+    <div class="side" id="side"></div>
+  </div>`;
+  return { cv: document.getElementById('cv'), side: document.getElementById('side'), hint: document.getElementById('hint') };
+}
+
+/* ===================== Utilitas gambar ===================== */
+function setupCanvas(cv, aspect){
+  const ctx = cv.getContext('2d');
+  function resize(){
+    const w = cv.parentElement.clientWidth;
+    const h = Math.round(Math.min(w*aspect, window.innerHeight*0.68));
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = w*dpr; cv.height = h*dpr; cv.style.height = h+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    cv._w = w; cv._h = h;
+  }
+  resize();
+  return {ctx, resize};
+}
+function makeView(cv, unitsAcross){
+  // dunia: satuan; layar: piksel. Origin di tengah, y ke atas.
+  const v = {};
+  v.update = () => { v.s = cv._w/unitsAcross; v.ox = cv._w/2; v.oy = cv._h/2; };
+  v.X = x => v.ox + x*v.s; v.Y = y => v.oy - y*v.s;
+  v.inv = (px,py) => [(px-v.ox)/v.s, (v.oy-py)/v.s];
+  v.update();
+  return v;
+}
+function grid(ctx, v, cv, step=1){
+  ctx.fillStyle = css('--panel'); ctx.fillRect(0,0,cv._w,cv._h);
+  ctx.strokeStyle = css('--grid'); ctx.lineWidth = 1;
+  const [x0,y1] = v.inv(0,0), [x1,y0] = v.inv(cv._w,cv._h);
+  ctx.beginPath();
+  for(let x=Math.ceil(x0/step)*step; x<=x1; x+=step){ ctx.moveTo(v.X(x),0); ctx.lineTo(v.X(x),cv._h); }
+  for(let y=Math.ceil(y0/step)*step; y<=y1; y+=step){ ctx.moveTo(0,v.Y(y)); ctx.lineTo(cv._w,v.Y(y)); }
+  ctx.stroke();
+  ctx.strokeStyle = css('--axis'); ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(0,v.Y(0)); ctx.lineTo(cv._w,v.Y(0)); ctx.moveTo(v.X(0),0); ctx.lineTo(v.X(0),cv._h); ctx.stroke();
+  ctx.fillStyle = css('--muted'); ctx.font = '12px system-ui';
+  ctx.fillText('x', cv._w-14, v.Y(0)-6); ctx.fillText('y', v.X(0)+6, 14);
+}
+function arrow(ctx, x0,y0,x1,y1, color, w=2.6, label, dash){
+  const dx=x1-x0, dy=y1-y0, L=Math.hypot(dx,dy); if(L<1) return;
+  const ux=dx/L, uy=dy/L, hl=Math.min(13, L*0.4), hw=hl*0.45;
+  ctx.save(); ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=w; ctx.lineCap='round';
+  if(dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1-ux*hl*0.8,y1-uy*hl*0.8); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x1-ux*hl-uy*hw, y1-uy*hl+ux*hw); ctx.lineTo(x1-ux*hl+uy*hw, y1-uy*hl-ux*hw); ctx.closePath(); ctx.fill();
+  if(label){ ctx.font='bold 14px system-ui'; ctx.fillText(label, x1+8*(-uy)+4, y1+8*ux-4); }
+  ctx.restore();
+}
+function slider(parent, id, label, min, max, step, val, fmt=v=>v){
+  const d = document.createElement('div'); d.className='row';
+  d.innerHTML = `<label for="${id}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"><output id="${id}o"></output>`;
+  parent.appendChild(d);
+  const inp = d.querySelector('input'), out = d.querySelector('output');
+  const upd = () => out.textContent = fmt(+inp.value); upd();
+  inp.addEventListener('input', upd);
+  return inp;
+}
+function seg(parent, options, active, onChange){
+  const d = document.createElement('div'); d.className='seg';
+  options.forEach(([k,lab])=>{
+    const b=document.createElement('button'); b.textContent=lab; b.dataset.k=k; if(k===active) b.classList.add('on');
+    b.onclick=()=>{ d.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b)); onChange(k); };
+    d.appendChild(b);
+  });
+  parent.appendChild(d); return d;
+}
+function check(parent, label, val){
+  const d=document.createElement('div'); d.className='row';
+  d.innerHTML=`<label><input type="checkbox" ${val?'checked':''}> ${label}</label>`;
+  parent.appendChild(d); return d.querySelector('input');
+}
+function card(side, title){ const c=document.createElement('div'); c.className='card'; c.innerHTML=`<h4>${title}</h4>`; side.appendChild(c); return c; }
+const f2 = x => (Math.abs(x)<0.005?0:x).toFixed(2);
+const deg = r => r*180/Math.PI;
+
+/* draggable points */
+function dragger(cv, v, pts, onMove){
+  let active = null;
+  const pos = e => { const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; };
+  cv.addEventListener('pointerdown', e => {
+    const [px,py]=pos(e); let best=null, bd=24;
+    pts().forEach(p=>{ const d=Math.hypot(v.X(p.x)-px, v.Y(p.y)-py); if(d<bd){bd=d;best=p;} });
+    if(best){ active=best; cv.setPointerCapture(e.pointerId); }
+  });
+  cv.addEventListener('pointermove', e => {
+    const [px,py]=pos(e);
+    if(!active){ cv.style.cursor = pts().some(p=>Math.hypot(v.X(p.x)-px,v.Y(p.y)-py)<24)?'grab':'default'; return; }
+    let [x,y]=v.inv(px,py); x=Math.round(x*2)/2; y=Math.round(y*2)/2;   // snap 0,5 satuan
+    active.x=x; active.y=y; onMove();
+  });
+  const up = ()=>{ active=null; };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+}
+
+/* ===================== SIM-1.1 Penjumlahan & komponen vektor ===================== */
+SIMS['SIM-1.1'] = function(){
+  const {cv, side, hint} = shell('SIM-1.1','Penjumlahan & Komponen Vektor',1,[
+    'Buat <b>A</b> = (3, 0) dan <b>B</b> = (0, 4). Berapa |<b>A</b> + <b>B</b>|? Apakah sama dengan |<b>A</b>| + |<b>B</b>|?',
+    'Cari dua vektor yang panjangnya masing-masing 3 dan 4 tetapi jumlahnya hanya 1. Kapan |<b>A</b>+<b>B</b>| paling besar dan paling kecil?',
+    'Pilih mode <b>A − B</b>. Tunjukkan bahwa <b>A − B</b> adalah vektor dari ujung <b>B</b> ke ujung <b>A</b>.',
+    'Tampilkan komponen. Periksa bahwa komponen <b>R</b> selalu = jumlah komponen <b>A</b> dan <b>B</b>, walaupun panjangnya tidak dijumlah begitu saja.'
+  ]);
+  hint.textContent = 'Seret ujung panah A atau B';
+  const {ctx, resize} = setupCanvas(cv, 0.72);
+  const v = makeView(cv, 16);
+  const A = {x:3, y:1}, B = {x:1, y:3};
+  let mode = 'sum';
+  const c1 = card(side,'Operasi');
+  seg(c1, [['sum','A + B'],['diff','A − B'],['tail','Ekor-ke-ujung']], mode, k=>{mode=k; draw();});
+  const showComp = check(c1,'Tampilkan komponen x, y', false);
+  const showPar = check(c1,'Tampilkan jajaran genjang', true);
+  showComp.onchange = showPar.onchange = draw;
+  const c2 = card(side,'Nilai'); const ro = document.createElement('table'); ro.className='ro'; c2.appendChild(ro);
+  const c3 = card(side,'Atur cepat');
+  const pres = [['A=(3,0), B=(0,4)',[3,0,0,4]],['Searah',[3,0,4,0]],['Berlawanan',[3,0,-4,0]],['Acak',null]];
+  const pd = document.createElement('div'); pd.className='seg'; c3.appendChild(pd);
+  pres.forEach(([lab,val])=>{ const b=document.createElement('button'); b.textContent=lab; pd.appendChild(b);
+    b.onclick=()=>{ const r=val||[0,0,0,0].map(()=>Math.round((Math.random()*10-5)*2)/2); [A.x,A.y,B.x,B.y]=r; draw(); }; });
+
+  dragger(cv, v, ()=>[A,B], draw);
+  function draw(){
+    v.update(); grid(ctx, v, cv);
+    const cA=css('--vA'), cB=css('--vB'), cR=css('--vR'), cD=css('--vD');
+    const R = mode==='diff' ? {x:A.x-B.x, y:A.y-B.y} : {x:A.x+B.x, y:A.y+B.y};
+    const O = [v.X(0), v.Y(0)];
+    if(mode==='sum'){
+      if(showPar.checked){
+        ctx.save(); ctx.fillStyle=cR+'22'; ctx.beginPath(); ctx.moveTo(...O); ctx.lineTo(v.X(A.x),v.Y(A.y)); ctx.lineTo(v.X(R.x),v.Y(R.y)); ctx.lineTo(v.X(B.x),v.Y(B.y)); ctx.closePath(); ctx.fill(); ctx.restore();
+        arrow(ctx, v.X(A.x),v.Y(A.y), v.X(R.x),v.Y(R.y), cB, 1.6, null, [5,5]);
+        arrow(ctx, v.X(B.x),v.Y(B.y), v.X(R.x),v.Y(R.y), cA, 1.6, null, [5,5]);
+      }
+      arrow(ctx, ...O, v.X(R.x), v.Y(R.y), cR, 3.2, 'R = A + B');
+    } else if(mode==='diff'){
+      arrow(ctx, v.X(B.x),v.Y(B.y), v.X(A.x),v.Y(A.y), cD, 1.8, null, [6,5]);
+      arrow(ctx, ...O, v.X(-B.x), v.Y(-B.y), cB, 1.6, '−B', [4,4]);
+      arrow(ctx, ...O, v.X(R.x), v.Y(R.y), cD, 3.2, 'A − B');
+    } else {
+      arrow(ctx, v.X(A.x),v.Y(A.y), v.X(R.x),v.Y(R.y), cB, 2.6, 'B');
+      arrow(ctx, ...O, v.X(R.x), v.Y(R.y), cR, 3.2, 'R');
+    }
+    if(showComp.checked){
+      [[A,cA],[B,cB],[R, mode==='diff'?cD:cR]].forEach(([p,c])=>{
+        ctx.save(); ctx.strokeStyle=c; ctx.globalAlpha=.75; ctx.setLineDash([3,4]); ctx.lineWidth=1.4;
+        ctx.beginPath(); ctx.moveTo(v.X(p.x),v.Y(0)); ctx.lineTo(v.X(p.x),v.Y(p.y)); ctx.moveTo(v.X(0),v.Y(p.y)); ctx.lineTo(v.X(p.x),v.Y(p.y)); ctx.stroke(); ctx.restore();
+      });
+    }
+    arrow(ctx, ...O, v.X(A.x), v.Y(A.y), cA, 2.8, 'A');
+    if(mode!=='tail') arrow(ctx, ...O, v.X(B.x), v.Y(B.y), cB, 2.8, 'B');
+    [A, mode==='tail'?null:B].forEach(p=>{ if(!p) return; ctx.beginPath(); ctx.fillStyle=css('--panel'); ctx.strokeStyle=css('--ink'); ctx.lineWidth=1.5; ctx.arc(v.X(p.x),v.Y(p.y),6,0,7); ctx.fill(); ctx.stroke(); });
+    if(mode==='tail'){ ctx.beginPath(); ctx.fillStyle=css('--panel'); ctx.strokeStyle=css('--ink'); ctx.arc(v.X(B.x),v.Y(B.y),5,0,7); ctx.fill(); ctx.stroke(); }
+    const mag = p => Math.hypot(p.x,p.y), ang = p => (deg(Math.atan2(p.y,p.x))+360)%360;
+    const lab = mode==='diff'?'A − B':'R';
+    const sw = c => `<span class="sw" style="background:${c}"></span>`;
+    ro.innerHTML = `
+      <tr><td>${sw(cA)}A</td><td>(${f2(A.x)}, ${f2(A.y)})</td></tr>
+      <tr><td>|A|, θ<sub>A</sub></td><td>${f2(mag(A))}, ${ang(A).toFixed(1)}°</td></tr>
+      <tr><td>${sw(cB)}B</td><td>(${f2(B.x)}, ${f2(B.y)})</td></tr>
+      <tr><td>|B|, θ<sub>B</sub></td><td>${f2(mag(B))}, ${ang(B).toFixed(1)}°</td></tr>
+      <tr><td>${sw(mode==='diff'?cD:cR)}${lab}</td><td>(${f2(R.x)}, ${f2(R.y)})</td></tr>
+      <tr><td>|${lab}|</td><td><b>${f2(mag(R))}</b></td></tr>
+      <tr><td>|A| ${mode==='diff'?'−':'+'} |B|</td><td>${f2(mode==='diff'?mag(A)-mag(B):mag(A)+mag(B))}</td></tr>`;
+  }
+  const onR = ()=>{ resize(); draw(); }; window.addEventListener('resize', onR);
+  stopCurrent = ()=> window.removeEventListener('resize', onR);
+  draw();
+};
+
+/* ===================== SIM-1.2 Perkalian titik & silang ===================== */
+SIMS['SIM-1.2'] = function(){
+  const {cv, side, hint} = shell('SIM-1.2','Perkalian Titik & Silang',1,[
+    'Putar <b>B</b> sampai tegak lurus <b>A</b>. Berapa <b>A</b>·<b>B</b>? Berapa luas jajaran genjang?',
+    'Buat <b>A</b> dan <b>B</b> searah. Mengapa |<b>A</b>×<b>B</b>| = 0 walaupun kedua vektor tidak nol?',
+    'Tukar urutan: bandingkan arah <b>A</b>×<b>B</b> dan <b>B</b>×<b>A</b> (keluar ⊙ atau masuk ⊗ bidang layar).',
+    'Buat sudut antara 90° dan 180°. Apa tanda <b>A</b>·<b>B</b>? Lihat proyeksi <b>B</b> pada <b>A</b> jatuh di mana.'
+  ]);
+  hint.textContent = 'Seret ujung panah A atau B';
+  const {ctx, resize} = setupCanvas(cv, 0.72);
+  const v = makeView(cv, 14);
+  const A = {x:4, y:0}, B = {x:2, y:3};
+  let show = 'dot';
+  const c1 = card(side,'Tampilkan');
+  seg(c1, [['dot','A · B (proyeksi)'],['cross','A × B (luas)'],['both','Keduanya']], show, k=>{show=k; draw();});
+  const c2 = card(side,'Nilai'); const ro=document.createElement('table'); ro.className='ro'; c2.appendChild(ro);
+  const c3 = card(side,'Grafik terhadap sudut θ');
+  const g = document.createElement('canvas'); g.style.width='100%'; c3.appendChild(g);
+  dragger(cv, v, ()=>[A,B], draw);
+
+  function plot(theta, a, b){
+    const W = c3.clientWidth-28, H = 150, dpr=window.devicePixelRatio||1;
+    g.width=W*dpr; g.height=H*dpr; g.style.height=H+'px'; const c=g.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0);
+    c.fillStyle=css('--panel'); c.fillRect(0,0,W,H);
+    const m=a*b||1, X=t=>8+t/Math.PI*(W-16), Y=y=>H/2 - y/m*(H/2-12);
+    c.strokeStyle=css('--axis'); c.beginPath(); c.moveTo(8,H/2); c.lineTo(W-8,H/2); c.stroke();
+    [[Math.cos,css('--vR'),'AB cos θ'],[Math.sin,css('--vD'),'AB sin θ']].forEach(([fn,col,lb],i)=>{
+      c.strokeStyle=col; c.lineWidth=2; c.beginPath();
+      for(let k=0;k<=100;k++){ const t=k/100*Math.PI; k?c.lineTo(X(t),Y(m*fn(t))):c.moveTo(X(t),Y(m*fn(t))); }
+      c.stroke(); c.fillStyle=col; c.font='11px system-ui'; c.fillText(lb, W-70, 14+i*14);
+      c.beginPath(); c.arc(X(theta),Y(m*fn(theta)),4,0,7); c.fill();
+    });
+    c.fillStyle=css('--muted'); c.fillText('0°',6,H-4); c.fillText('90°',W/2-10,H-4); c.fillText('180°',W-30,H-4);
+  }
+  function draw(){
+    v.update(); grid(ctx, v, cv);
+    const cA=css('--vA'), cB=css('--vB'), cR=css('--vR'), cD=css('--vD');
+    const a=Math.hypot(A.x,A.y), b=Math.hypot(B.x,B.y);
+    const dot=A.x*B.x+A.y*B.y, crz=A.x*B.y-A.y*B.x;
+    const th = Math.acos(Math.max(-1,Math.min(1, a&&b? dot/(a*b):1)));
+    const O=[v.X(0),v.Y(0)];
+    if(show!=='dot'){
+      ctx.save(); ctx.fillStyle=cD+'30'; ctx.strokeStyle=cD; ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(...O); ctx.lineTo(v.X(A.x),v.Y(A.y)); ctx.lineTo(v.X(A.x+B.x),v.Y(A.y+B.y)); ctx.lineTo(v.X(B.x),v.Y(B.y)); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+      // simbol arah A×B
+      const cx=v.X((A.x+B.x)/2), cy=v.Y((A.y+B.y)/2);
+      if(Math.abs(crz)>0.01){
+        ctx.save(); ctx.strokeStyle=cD; ctx.fillStyle=cD; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(cx,cy,11,0,7); ctx.stroke();
+        if(crz>0){ ctx.beginPath(); ctx.arc(cx,cy,3.5,0,7); ctx.fill(); }
+        else { ctx.beginPath(); ctx.moveTo(cx-7,cy-7); ctx.lineTo(cx+7,cy+7); ctx.moveTo(cx+7,cy-7); ctx.lineTo(cx-7,cy+7); ctx.stroke(); }
+        ctx.restore();
+      }
+    }
+    if(show!=='cross' && a>0){
+      const k=dot/(a*a), P={x:k*A.x, y:k*A.y};
+      ctx.save(); ctx.strokeStyle=css('--muted'); ctx.setLineDash([3,4]); ctx.lineWidth=1.3;
+      ctx.beginPath(); ctx.moveTo(v.X(B.x),v.Y(B.y)); ctx.lineTo(v.X(P.x),v.Y(P.y)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(v.X(-A.x*3),v.Y(-A.y*3)); ctx.lineTo(v.X(A.x*3),v.Y(A.y*3)); ctx.globalAlpha=.35; ctx.stroke(); ctx.restore();
+      ctx.save(); ctx.strokeStyle=cR; ctx.lineWidth=7; ctx.globalAlpha=.55; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(...O); ctx.lineTo(v.X(P.x),v.Y(P.y)); ctx.stroke(); ctx.restore();
+    }
+    // busur sudut
+    const aA=Math.atan2(A.y,A.x), aB=Math.atan2(B.y,B.x);
+    ctx.save(); ctx.strokeStyle=css('--ink'); ctx.lineWidth=1.2; ctx.beginPath();
+    let d=aB-aA; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
+    ctx.arc(O[0],O[1],26,-aA,-(aA+d), d>0); ctx.stroke(); ctx.restore();
+    arrow(ctx,...O,v.X(A.x),v.Y(A.y),cA,2.8,'A'); arrow(ctx,...O,v.X(B.x),v.Y(B.y),cB,2.8,'B');
+    [A,B].forEach(p=>{ ctx.beginPath(); ctx.fillStyle=css('--panel'); ctx.strokeStyle=css('--ink'); ctx.lineWidth=1.5; ctx.arc(v.X(p.x),v.Y(p.y),6,0,7); ctx.fill(); ctx.stroke(); });
+    const sw=c=>`<span class="sw" style="background:${c}"></span>`;
+    ro.innerHTML=`
+      <tr><td>|A|, |B|</td><td>${f2(a)}, ${f2(b)}</td></tr>
+      <tr><td>sudut θ</td><td>${deg(th).toFixed(1)}°</td></tr>
+      <tr><td>${sw(cR)}A·B = A<sub>x</sub>B<sub>x</sub>+A<sub>y</sub>B<sub>y</sub></td><td><b>${f2(dot)}</b></td></tr>
+      <tr><td>|A||B| cos θ</td><td>${f2(a*b*Math.cos(th))}</td></tr>
+      <tr><td>${sw(cD)}(A×B)<sub>z</sub> = A<sub>x</sub>B<sub>y</sub>−A<sub>y</sub>B<sub>x</sub></td><td><b>${f2(crz)}</b></td></tr>
+      <tr><td>|A||B| sin θ = luas</td><td>${f2(a*b*Math.sin(th))}</td></tr>
+      <tr><td>arah A×B</td><td>${Math.abs(crz)<0.01?'— (nol)':crz>0?'⊙ keluar layar (+z)':'⊗ masuk layar (−z)'}</td></tr>`;
+    plot(th, a, b);
+  }
+  const onR=()=>{resize();draw();}; window.addEventListener('resize',onR);
+  stopCurrent=()=>window.removeEventListener('resize',onR);
+  draw();
+};
+
+/* ===================== SIM-1.3 Kinematika koordinat polar ===================== */
+SIMS['SIM-1.3'] = function(){
+  const {cv, side, hint} = shell('SIM-1.3','Kinematika Koordinat Polar',1,[
+    'Pilih <b>Melingkar beraturan</b>. Laju tetap, tetapi apakah percepatannya nol? Ke mana arahnya?',
+    'Pilih <b>Garis lurus</b>. θ terus berubah, tetapi lihat a<sub>r</sub> dan a<sub>θ</sub>: suku-sukunya saling meniadakan sehingga percepatan nol.',
+    'Pilih <b>Spiral</b>. Perhatikan suku 2ṙθ̇ (percepatan Coriolis): ia muncul walaupun ω tetap.',
+    'Amati ê<sub>r</sub> dan ê<sub>θ</sub>: panjangnya selalu 1, tetapi arahnya ikut berubah bersama partikel.'
+  ]);
+  hint.textContent = 'Lintasan partikel; panah biru = êᵣ, ungu = êθ';
+  const {ctx, resize} = setupCanvas(cv, 0.72);
+  const v = makeView(cv, 14);
+  let preset='circ', t=0, playing=true, trail=[], last=performance.now(), raf;
+  const c1=card(side,'Jenis gerak');
+  seg(c1,[['circ','Melingkar beraturan'],['acc','Melingkar dipercepat'],['spiral','Spiral'],['line','Garis lurus']],preset,k=>{preset=k;t=0;trail=[];});
+  const c2=card(side,'Parameter');
+  const sR=slider(c2,'pR','R atau r₀ (m)',1,5,0.5,3,x=>x.toFixed(1));
+  const sW=slider(c2,'pW','ω, α, atau v',0.2,2,0.1,0.8,x=>x.toFixed(1));
+  const sU=slider(c2,'pU','ṙ spiral (m/s)',0.1,1,0.05,0.35,x=>x.toFixed(2));
+  const sSp=slider(c2,'pS','Kecepatan putar ulang',0.25,2,0.25,1,x=>x+'×');
+  const bar=document.createElement('div'); bar.className='row';
+  bar.innerHTML='<button class="btn" id="pp">Jeda</button><button class="btn ghost" id="rs">Ulang</button>'; c2.appendChild(bar);
+  const c3=card(side,'Tampilkan');
+  const shU=check(c3,'Vektor satuan ê<sub>r</sub>, ê<sub>θ</sub>',true);
+  const shV=check(c3,'Kecepatan v',true);
+  const shA=check(c3,'Percepatan a',true);
+  const shC=check(c3,'Komponen a<sub>r</sub>, a<sub>θ</sub>',false);
+  const c4=card(side,'Nilai saat t'); const ro=document.createElement('table'); ro.className='ro'; c4.appendChild(ro);
+  document.getElementById('pp').onclick=e=>{playing=!playing; e.target.textContent=playing?'Jeda':'Jalan';};
+  document.getElementById('rs').onclick=()=>{t=0;trail=[];};
+  [sR,sW,sU].forEach(s=>s.addEventListener('input',()=>{t=0;trail=[];}));
+
+  function state(t){
+    const R=+sR.value, w=+sW.value, u=+sU.value;
+    if(preset==='circ') return {r:R, rd:0, rdd:0, th:w*t, thd:w, thdd:0};
+    if(preset==='acc'){ const a=w*0.25; return {r:R, rd:0, rdd:0, th:0.5*a*t*t, thd:a*t, thdd:a}; }
+    if(preset==='spiral') return {r:0.6+u*t, rd:u, rdd:0, th:w*t, thd:w, thdd:0};
+    // garis lurus: x = -6 + v t, y = R
+    const vx=w*1.5, x=-6+vx*t, y=R, r=Math.hypot(x,y), rd=x*vx/r, thd=-y*vx/(r*r);
+    return {r, rd, rdd:(vx*vx-rd*rd)/r, th:Math.atan2(y,x), thd, thdd:2*y*vx*rd/(r*r*r)};
+  }
+  function limit(){ if(preset==='spiral') return (6.2-0.6)/(+sU.value); if(preset==='line') return 12/(+sW.value*1.5); if(preset==='acc') return Math.sqrt(2*6*Math.PI/(+sW.value*0.25)); return 1e9; }
+
+  function frame(now){
+    const dt=Math.max(0,Math.min(0.05,(now-last)/1000)); last=now;
+    if(playing){ t+=dt*(+sSp.value); if(t>limit()){t=0;trail=[];} }
+    draw(); raf=requestAnimationFrame(frame);
+  }
+  function draw(){
+    v.update(); grid(ctx,v,cv);
+    const s=state(t), c=Math.cos(s.th), sn=Math.sin(s.th);
+    const x=s.r*c, y=s.r*sn, P=[v.X(x),v.Y(y)];
+    trail.push([x,y]); if(trail.length>900) trail.shift();
+    ctx.save(); ctx.strokeStyle=css('--muted'); ctx.globalAlpha=.6; ctx.lineWidth=1.6; ctx.beginPath();
+    trail.forEach((p,i)=> i?ctx.lineTo(v.X(p[0]),v.Y(p[1])):ctx.moveTo(v.X(p[0]),v.Y(p[1]))); ctx.stroke(); ctx.restore();
+    // garis r dan busur θ
+    ctx.save(); ctx.strokeStyle=css('--axis'); ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(v.X(0),v.Y(0)); ctx.lineTo(...P); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); const th=((s.th%(2*Math.PI))+2*Math.PI)%(2*Math.PI); ctx.arc(v.X(0),v.Y(0),22,0,-th,true); ctx.stroke();
+    ctx.fillStyle=css('--muted'); ctx.font='12px system-ui'; ctx.fillText('θ',v.X(0)+26,v.Y(0)-8); ctx.restore();
+    const vr=s.rd, vth=s.r*s.thd, ar=s.rdd-s.r*s.thd*s.thd, ath=s.r*s.thdd+2*s.rd*s.thd;
+    const er=[c,sn], et=[-sn,c];
+    const sc=v.s, U=1.1*sc, Vs=0.9*sc, As=0.9*sc;
+    const tip=(vec,k)=>[P[0]+vec[0]*k, P[1]-vec[1]*k];
+    if(shU.checked){ arrow(ctx,...P,...tip(er,U),css('--vB'),2,'êᵣ'); arrow(ctx,...P,...tip(et,U),css('--vD'),2,'êθ'); }
+    const vvec=[vr*er[0]+vth*et[0], vr*er[1]+vth*et[1]], avec=[ar*er[0]+ath*et[0], ar*er[1]+ath*et[1]];
+    if(shV.checked) arrow(ctx,...P,...tip(vvec,Vs),css('--vR'),3,'v');
+    if(shC.checked){ arrow(ctx,...P,...tip([ar*er[0],ar*er[1]],As),css('--vAcc'),1.8,'aᵣ',[5,4]); arrow(ctx,...P,...tip([ath*et[0],ath*et[1]],As),css('--vAcc'),1.8,'aθ',[5,4]); }
+    if(shA.checked) arrow(ctx,...P,...tip(avec,As),css('--vA'),3,'a');
+    ctx.beginPath(); ctx.fillStyle=css('--ink'); ctx.arc(...P,6,0,7); ctx.fill();
+    const sw=col=>`<span class="sw" style="background:${col}"></span>`;
+    ro.innerHTML=`
+      <tr><td>t</td><td>${t.toFixed(2)} s</td></tr>
+      <tr><td>r, θ</td><td>${f2(s.r)} m, ${deg(th).toFixed(0)}°</td></tr>
+      <tr><td>ṙ, θ̇</td><td>${f2(s.rd)}, ${f2(s.thd)} rad/s</td></tr>
+      <tr><td>${sw(css('--vR'))}v<sub>r</sub> = ṙ</td><td>${f2(vr)}</td></tr>
+      <tr><td>v<sub>θ</sub> = rθ̇</td><td>${f2(vth)}</td></tr>
+      <tr><td>|v|</td><td><b>${f2(Math.hypot(vr,vth))}</b> m/s</td></tr>
+      <tr><td>&nbsp;&nbsp;r̈</td><td>${f2(s.rdd)}</td></tr>
+      <tr><td>&nbsp;&nbsp;−rθ̇² (sentripetal)</td><td>${f2(-s.r*s.thd*s.thd)}</td></tr>
+      <tr><td>${sw(css('--vAcc'))}a<sub>r</sub></td><td><b>${f2(ar)}</b></td></tr>
+      <tr><td>&nbsp;&nbsp;rθ̈</td><td>${f2(s.r*s.thdd)}</td></tr>
+      <tr><td>&nbsp;&nbsp;2ṙθ̇ (Coriolis)</td><td>${f2(2*s.rd*s.thd)}</td></tr>
+      <tr><td>${sw(css('--vAcc'))}a<sub>θ</sub></td><td><b>${f2(ath)}</b></td></tr>
+      <tr><td>${sw(css('--vA'))}|a|</td><td><b>${f2(Math.hypot(ar,ath))}</b> m/s²</td></tr>`;
+  }
+  const onR=()=>{resize();}; window.addEventListener('resize',onR);
+  raf=requestAnimationFrame(frame);
+  stopCurrent=()=>{cancelAnimationFrame(raf); window.removeEventListener('resize',onR);};
+};
+
+/* ===================== Utilitas tambahan ===================== */
+function anim(step){
+  let raf, last = performance.now(), alive = true;
+  function f(now){ if(!alive) return; const dt = Math.max(0, Math.min(0.05,(now-last)/1000)); last = now; step(dt); raf = requestAnimationFrame(f); }
+  raf = requestAnimationFrame(f);
+  return () => { alive = false; cancelAnimationFrame(raf); };
+}
+function makePlot(parent, title, h){
+  h = h || 160;
+  const c = card(parent, title);
+  const cv = document.createElement('canvas'); cv.style.width = '100%'; cv.style.display = 'block'; c.appendChild(cv);
+  const draw = function(series, o){
+    o = o || {};
+    const W = Math.max(200, c.clientWidth - 28), H = o.h || h, dpr = window.devicePixelRatio || 1;
+    if(cv.width !== Math.round(W*dpr) || cv.height !== Math.round(H*dpr)){ cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr); cv.style.height = H+'px'; }
+    const g = cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+    g.fillStyle = css('--panel'); g.fillRect(0,0,W,H);
+    let x0 = o.xmin, x1 = o.xmax, y0 = o.ymin, y1 = o.ymax;
+    if(x0 === undefined || x1 === undefined || y0 === undefined || y1 === undefined){
+      let a=Infinity,b=-Infinity,cc=Infinity,d=-Infinity;
+      series.forEach(s => s.pts.forEach(p => { if(isFinite(p[0])&&isFinite(p[1])){ if(p[0]<a)a=p[0]; if(p[0]>b)b=p[0]; if(p[1]<cc)cc=p[1]; if(p[1]>d)d=p[1]; } }));
+      if(x0===undefined) x0=a; if(x1===undefined) x1=b; if(y0===undefined) y0=cc; if(y1===undefined) y1=d;
+    }
+    if(!isFinite(x0)||!isFinite(x1)){x0=0;x1=1;} if(x1-x0<1e-12) x1=x0+1;
+    if(!isFinite(y0)||!isFinite(y1)){y0=0;y1=1;} if(y1-y0<1e-12){ y0-=1; y1+=1; }
+    if(!o.ymin && o.ymin!==0){ const m=(y1-y0)*0.06; y0-=m; y1+=m; }
+    const L = 40, R = 8, T = 8, B = 20;
+    const X = x => L + (x-x0)/(x1-x0)*(W-L-R), Y = y => H-B - (y-y0)/(y1-y0)*(H-B-T);
+    g.strokeStyle = css('--grid'); g.lineWidth = 1; g.beginPath();
+    for(let i=0;i<=4;i++){ const yy=T+i*(H-B-T)/4; g.moveTo(L,yy); g.lineTo(W-R,yy); } g.stroke();
+    g.strokeStyle = css('--axis');
+    if(y0<0 && y1>0){ g.beginPath(); g.moveTo(L,Y(0)); g.lineTo(W-R,Y(0)); g.stroke(); }
+    g.beginPath(); g.moveTo(L,T); g.lineTo(L,H-B); g.lineTo(W-R,H-B); g.stroke();
+    g.fillStyle = css('--muted'); g.font = '10px system-ui';
+    const fmt = v => Math.abs(v)>=1000||(Math.abs(v)<0.01&&v!==0) ? v.toExponential(1) : (+v.toFixed(2)).toString();
+    g.textAlign='right'; g.fillText(fmt(y1), L-3, T+8); g.fillText(fmt(y0), L-3, H-B);
+    g.textAlign='left'; g.fillText(fmt(x0), L, H-6); g.textAlign='right'; g.fillText(fmt(x1)+(o.xl?' '+o.xl:''), W-R, H-6); g.textAlign='left';
+    let ly = 12;
+    series.forEach(s => {
+      g.save(); g.strokeStyle = s.color; g.lineWidth = s.w || 2; if(s.dash) g.setLineDash(s.dash);
+      g.beginPath(); let started=false;
+      s.pts.forEach(p => { if(!isFinite(p[1])) { started=false; return; } const px=X(p[0]), py=Y(Math.max(y0-(y1-y0),Math.min(y1+(y1-y0),p[1]))); if(!started){ g.moveTo(px,py); started=true; } else g.lineTo(px,py); });
+      g.stroke(); g.restore();
+      if(s.dot){ g.fillStyle = s.color; g.beginPath(); g.arc(X(s.dot[0]), Y(s.dot[1]), 4, 0, 7); g.fill(); }
+      if(s.label){ g.fillStyle = s.color; g.font='11px system-ui'; g.textAlign='right'; g.fillText(s.label, W-R-2, T+ly); g.textAlign='left'; ly += 13; }
+    });
+    if(o.vline!==undefined){ g.strokeStyle=css('--muted'); g.setLineDash([3,3]); g.beginPath(); g.moveTo(X(o.vline),T); g.lineTo(X(o.vline),H-B); g.stroke(); g.setLineDash([]); }
+    return {X, Y, g, W, H};
+  };
+  draw.canvas = cv; draw.card = c;
+  return draw;
+}
+function readout(side, title){ const c = card(side, title||'Nilai'); const t = document.createElement('table'); t.className='ro'; c.appendChild(t); return rows => { t.innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join(''); }; }
+function buttons(parent, list){ const d=document.createElement('div'); d.className='row'; list.forEach(([lab,fn,ghost])=>{ const b=document.createElement('button'); b.className='btn'+(ghost?' ghost':''); b.textContent=lab; b.onclick=()=>fn(b); d.appendChild(b); }); parent.appendChild(d); return d; }
+function rk4(f, y, t, h){
+  const k1=f(t,y), y2=y.map((v,i)=>v+h/2*k1[i]), k2=f(t+h/2,y2), y3=y.map((v,i)=>v+h/2*k2[i]), k3=f(t+h/2,y3), y4=y.map((v,i)=>v+h*k3[i]), k4=f(t+h,y4);
+  return y.map((v,i)=>v+h/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));
+}
+function sim(code, title, chap, tasks, aspect, units){
+  const s = shell(code, title, chap, tasks);
+  const cs = setupCanvas(s.cv, aspect||0.62);
+  s.ctx = cs.ctx; s.resize = cs.resize;
+  s.v = makeView(s.cv, units||10);
+  const onR = () => { cs.resize(); s.v.update(); };
+  window.addEventListener('resize', onR);
+  s.cleanup = [() => window.removeEventListener('resize', onR)];
+  stopCurrent = () => s.cleanup.forEach(f => f());
+  s.clear = () => { s.ctx.fillStyle = css('--panel'); s.ctx.fillRect(0,0,s.cv._w,s.cv._h); };
+  return s;
+}
+function txt(ctx, s, x, y, col, font, align){ ctx.save(); ctx.fillStyle = col||css('--ink'); ctx.font = font||'13px system-ui'; ctx.textAlign = align||'left'; ctx.fillText(s, x, y); ctx.restore(); }
+function box(ctx, x, y, w, h, fill, stroke){ ctx.save(); ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); if(stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=1.5; ctx.strokeRect(x,y,w,h);} ctx.restore(); }
+const G0 = 9.8;
+
+/* ===================== SIM-2.1 Bidang miring ===================== */
+SIMS['SIM-2.1'] = function(){
+  const S = sim('SIM-2.1','Bidang Miring dan Gaya Gesek',2,[
+    'Atur sudut 30°, μ<sub>s</sub> = 0,40, μ<sub>k</sub> = 0,30, tanpa dorongan (Contoh 2.1). Bandingkan percepatan dengan 2,35 m/s².',
+    'Kecilkan sudut sampai balok tepat diam. Bandingkan tan θ dengan μ<sub>s</sub>.',
+    'Saat balok diam, ubah gaya dorong ke atas bidang. Amati gesekan statis menyesuaikan diri sampai batas μ<sub>s</sub>N.'
+  ], 0.62);
+  const c1 = card(S.side,'Parameter');
+  const sT = slider(c1,'th','Sudut θ (°)',0,60,1,30,x=>x+'°');
+  const sM = slider(c1,'m','Massa m (kg)',1,10,0.5,5,x=>x.toFixed(1));
+  const sMs = slider(c1,'ms','μ<sub>s</sub>',0,1,0.01,0.40,x=>x.toFixed(2));
+  const sMk = slider(c1,'mk','μ<sub>k</sub>',0,1,0.01,0.30,x=>x.toFixed(2));
+  const sF = slider(c1,'F','Dorongan ke atas bidang (N)',0,80,1,0,x=>x+' N');
+  let s=0, v=0, t=0, hist=[];
+  const reset = () => { s=0; v=0; t=0; hist=[]; };
+  buttons(c1,[['Ulang',reset]]);
+  [sT,sM,sMs,sMk].forEach(x=>x.addEventListener('input',reset));
+  const ro = readout(S.side);
+  const pl = makePlot(S.side,'Kecepatan sepanjang bidang v(t)');
+  let st = {};
+  S.cleanup.push(anim(dt => {
+    const th = (+sT.value)*Math.PI/180, m=+sM.value, ms=+sMs.value, mk=+sMk.value, F=+sF.value;
+    const N = m*G0*Math.cos(th), Fd = m*G0*Math.sin(th) - F;   // positif = menuruni bidang
+    let f, a;
+    if(Math.abs(v) < 1e-6){
+      if(Math.abs(Fd) <= ms*N + 1e-9){ f = -Fd; a = 0; v = 0; }
+      else { f = -Math.sign(Fd)*mk*N; a = (Fd+f)/m; }
+    } else { f = -Math.sign(v)*mk*N; a = (Fd+f)/m; }
+    const vn = v + a*dt;
+    if(Math.abs(v)>1e-6 && Math.sign(vn)!==Math.sign(v)){ v = 0; } else v = vn;
+    s += v*dt; t += dt;
+    if(s>5.5 || s<-0.2 || t>12){ reset(); }
+    if(hist.length===0 || t-hist[hist.length-1][0]>0.03) hist.push([t,v]);
+    st = {th,m,N,f,a,F,Fd,ms,mk};
+    draw();
+  }));
+  function draw(){
+    const {ctx,cv} = S; S.clear();
+    const th=st.th||0, W=cv._w, H=cv._h;
+    const Lpx = Math.min(W*0.8, (H*0.75)/Math.max(0.2,Math.sin(th)+0.01)), base=Lpx*Math.cos(th), hgt=Lpx*Math.sin(th);
+    const x0 = (W-base)/2, y0 = H*0.88;
+    ctx.fillStyle = css('--chip'); ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0+base,y0); ctx.lineTo(x0,y0-hgt); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = css('--axis'); ctx.stroke();
+    const scale = Lpx/6, u = [Math.cos(th), Math.sin(th)];          // arah menuruni bidang (layar: x kanan, y bawah)
+    const pos = 0.3 + s; const cx = x0 + u[0]*pos*scale, cy = y0 - hgt + u[1]*pos*scale;
+    const bw=46, bh=30;
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(th); ctx.fillStyle=css('--accent'); ctx.globalAlpha=0.85; ctx.fillRect(-bw/2,-bh,bw,bh); ctx.restore();
+    const n=[Math.sin(th),-Math.cos(th)]; const C=[cx+n[0]*bh/2, cy+n[1]*bh/2];
+    const k = 60/(Math.max(0.1,st.m||1)*G0);
+    const ar=(vec,col,lab)=>arrow(ctx,C[0],C[1],C[0]+vec[0]*k,C[1]+vec[1]*k,col,2.4,lab);
+    ar([0,(st.m||1)*G0], css('--vA'),'mg');
+    ar([n[0]*(st.N||0), n[1]*(st.N||0)], css('--vB'),'N');
+    if(Math.abs(st.f||0)>0.01) ar([u[0]*(st.f), u[1]*(st.f)], css('--vAcc'),'f');
+    if((st.F||0)>0) ar([-u[0]*st.F, -u[1]*st.F], css('--vR'),'F');
+    const moving = Math.abs(v)>1e-6;
+    ro([
+      ['tan θ', Math.tan(st.th||0).toFixed(3)],
+      ['N = mg cos θ', f2(st.N||0)+' N'],
+      ['komponen berat sejajar bidang', f2((st.m||0)*G0*Math.sin(st.th||0))+' N'],
+      ['μ<sub>s</sub>N (batas statis)', f2((st.ms||0)*(st.N||0))+' N'],
+      ['gesekan f', f2(Math.abs(st.f||0))+' N ('+(moving?'kinetis':'statis')+')'],
+      ['percepatan a', f2(st.a||0)+' m/s²'],
+      ['kecepatan v', f2(v)+' m/s'],
+      ['keadaan', moving||Math.abs(st.a||0)>1e-6 ? '<b>bergerak</b>' : '<b>diam</b>']
+    ]);
+    pl([{pts:hist, color:css('--vR'), label:'v (m/s)'}], {xmin:0, xmax:Math.max(4,t), xl:'s'});
+  }
+};
+
+/* ===================== SIM-2.2 Mesin Atwood ===================== */
+SIMS['SIM-2.2'] = function(){
+  const S = sim('SIM-2.2','Mesin Atwood',2,[
+    'Atur m<sub>1</sub> = 2 kg dan m<sub>2</sub> = 3 kg (Contoh 2.2). Bandingkan T dengan m<sub>1</sub>g dan m<sub>2</sub>g.',
+    'Buat m<sub>1</sub> = m<sub>2</sub>, lalu tekan "Beri dorongan". Apakah sistem berhenti?',
+    'Buat m<sub>2</sub> jauh lebih besar dari m<sub>1</sub>. Menuju nilai berapa a dan T?'
+  ], 0.7);
+  const c1 = card(S.side,'Parameter');
+  const s1 = slider(c1,'m1','m<sub>1</sub> (kg)',0.1,10,0.1,2,x=>x.toFixed(1));
+  const s2 = slider(c1,'m2','m<sub>2</sub> (kg)',0.1,10,0.1,3,x=>x.toFixed(1));
+  let y=0, v=0;
+  const reset=()=>{y=0;v=0;};
+  buttons(c1,[['Ulang',reset],['Beri dorongan',()=>{v=1;},true]]);
+  [s1,s2].forEach(x=>x.addEventListener('input',reset));
+  const ro = readout(S.side);
+  S.cleanup.push(anim(dt=>{
+    const m1=+s1.value, m2=+s2.value, a=(m2-m1)*G0/(m1+m2), T=2*m1*m2*G0/(m1+m2);
+    v += a*dt; y += v*dt; if(Math.abs(y)>1.6) reset();
+    const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h, cx=W/2, py=H*0.12, R=Math.min(40,W*0.07), sc=H*0.22;
+    ctx.strokeStyle=css('--axis'); ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(cx,py-30); ctx.lineTo(cx,py); ctx.stroke();
+    ctx.fillStyle=css('--chip'); ctx.strokeStyle=css('--ink'); ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(cx,py,R,0,7); ctx.fill(); ctx.stroke();
+    ctx.save(); ctx.translate(cx,py); ctx.rotate(-y/(R/sc)); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(R,0); ctx.stroke(); ctx.restore();
+    const y1 = py+H*0.4 - y*sc, y2 = py+H*0.4 + y*sc;
+    ctx.strokeStyle=css('--ink'); ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(cx-R,py); ctx.lineTo(cx-R,y1); ctx.moveTo(cx+R,py); ctx.lineTo(cx+R,y2); ctx.stroke();
+    const bs = m => 18+Math.sqrt(m)*10;
+    const b1=bs(m1), b2=bs(m2);
+    box(ctx,cx-R-b1/2,y1,b1,b1,css('--vA'),null); box(ctx,cx+R-b2/2,y2,b2,b2,css('--vB'),null);
+    txt(ctx,'m₁',cx-R,y1+b1/2+5,'#fff','bold 13px system-ui','center'); txt(ctx,'m₂',cx+R,y2+b2/2+5,'#fff','bold 13px system-ui','center');
+    const k=3;
+    arrow(ctx,cx-R,y1,cx-R,y1-T*k,css('--vR'),2.4,'T'); arrow(ctx,cx-R,y1+b1,cx-R,y1+b1+m1*G0*k,css('--vAcc'),2.4,'m₁g');
+    arrow(ctx,cx+R,y2,cx+R,y2-T*k,css('--vR'),2.4,'T'); arrow(ctx,cx+R,y2+b2,cx+R,y2+b2+m2*G0*k,css('--vAcc'),2.4,'m₂g');
+    ro([['a = (m₂−m₁)g/(m₁+m₂)', f2(a)+' m/s²'],['T = 2m₁m₂g/(m₁+m₂)', f2(T)+' N'],['m₁g', f2(m1*G0)+' N'],['m₂g', f2(m2*G0)+' N'],['kecepatan m₂ (ke bawah)', f2(v)+' m/s']]);
+  }));
+};
+
+/* ===================== SIM-3.1 Diagram energi potensial ===================== */
+SIMS['SIM-3.1'] = function(){
+  const S = sim('SIM-3.1','Diagram Energi Potensial',3,[
+    'Pilih sumur ganda. Cari energi terkecil yang membuat partikel dapat berpindah lembah (bandingkan dengan V(0) = 2 J).',
+    'Amati batang energi kinetik dan potensial. Di mana K maksimum?',
+    'Tekan "Taruh di puncak": partikel diletakkan di x = 0 dengan laju hampir nol. Apa yang terjadi?'
+  ], 0.62);
+  const P = {
+    pegas:{name:'Pegas  V = ½kx² (k = 2)', V:x=>x*x, dV:x=>2*x, x0:0, xr:[-2.2,2.2], vr:[-0.3,4.5], E:1},
+    ganda:{name:'Sumur ganda  V = 2(x²−1)²', V:x=>2*(x*x-1)**2, dV:x=>8*x*(x*x-1), x0:1, xr:[-1.9,1.9], vr:[-0.3,5], E:1},
+    molekul:{name:'Molekul (Morse)', V:x=>3*(1-Math.exp(-2*(x-1)))**2, dV:x=>12*(1-Math.exp(-2*(x-1)))*Math.exp(-2*(x-1)), x0:1, xr:[0.55,4], vr:[-0.3,5], E:1.5}
+  };
+  let key='ganda', x=1, v=0, E=1;
+  const c1=card(S.side,'Bentuk potensial');
+  seg(c1,[['pegas','Pegas'],['ganda','Sumur ganda'],['molekul','Molekul']],key,k=>{key=k; sE.value=P[k].E; sE.dispatchEvent(new Event('input')); start();});
+  const sE = slider(c1,'E','Energi total E (J)',0.05,4.5,0.05,1,x=>x.toFixed(2)+' J');
+  buttons(c1,[['Taruh di puncak',()=>{ if(key!=='ganda') return; x=0.0005; v=0; E=P.ganda.V(x); }],['Ulang',()=>start(),true]]);
+  function start(){ const p=P[key]; E=+sE.value; x=p.x0; v=Math.sqrt(Math.max(0,2*(E-p.V(x)))); }
+  sE.addEventListener('input',start); start();
+  const ro = readout(S.side);
+  S.cleanup.push(anim(dt=>{
+    const p=P[key];
+    for(let i=0;i<10;i++){ const y=rk4((t,y)=>[y[1],-p.dV(y[0])],[x,v],0,dt/10); x=y[0]; v=y[1]; }
+    if(key==='molekul' && x>3.9){ start(); }
+    const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h, L=40,B=30;
+    const X=t=>L+(t-p.xr[0])/(p.xr[1]-p.xr[0])*(W-L-10), Y=e=>H-B-(e-p.vr[0])/(p.vr[1]-p.vr[0])*(H-B-10);
+    ctx.fillStyle=css('--chip'); ctx.globalAlpha=0.7;
+    for(let px=L; px<W-10; px+=2){ const xx=p.xr[0]+(px-L)/(W-L-10)*(p.xr[1]-p.xr[0]); if(p.V(xx)>E) ctx.fillRect(px,10,2,H-B-10); }
+    ctx.globalAlpha=1;
+    ctx.strokeStyle=css('--axis'); ctx.beginPath(); ctx.moveTo(L,Y(0)); ctx.lineTo(W-10,Y(0)); ctx.moveTo(L,10); ctx.lineTo(L,H-B); ctx.stroke();
+    ctx.strokeStyle=css('--vB'); ctx.lineWidth=2.5; ctx.beginPath();
+    for(let px=L; px<W-10; px++){ const xx=p.xr[0]+(px-L)/(W-L-10)*(p.xr[1]-p.xr[0]); const yy=Y(Math.min(p.vr[1]+1,p.V(xx))); px===L?ctx.moveTo(px,yy):ctx.lineTo(px,yy); } ctx.stroke();
+    ctx.strokeStyle=css('--vA'); ctx.setLineDash([6,4]); ctx.lineWidth=1.8; ctx.beginPath(); ctx.moveTo(L,Y(E)); ctx.lineTo(W-10,Y(E)); ctx.stroke(); ctx.setLineDash([]);
+    txt(ctx,'E',W-24,Y(E)-6,css('--vA'),'bold 13px system-ui'); txt(ctx,'V(x)',L+6,22,css('--vB'),'bold 13px system-ui'); txt(ctx,'x',W-20,H-10,css('--muted'));
+    txt(ctx,'daerah terarsir: terlarang (V > E)',L+6,H-8,css('--muted'),'11px system-ui');
+    const Vx=p.V(x), K=Math.max(0,E-Vx);
+    ctx.strokeStyle=css('--vR'); ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(X(x),Y(Vx)); ctx.lineTo(X(x),Y(E)); ctx.stroke();
+    ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(X(x),Y(E),7,0,7); ctx.fill();
+    ctx.fillStyle=css('--vB'); ctx.beginPath(); ctx.arc(X(x),Y(Vx),4,0,7); ctx.fill();
+    txt(ctx,'K',X(x)+8,(Y(Vx)+Y(E))/2,css('--vR'),'bold 12px system-ui');
+    ro([['potensial', p.name],['x', f2(x)+' m'],['v', f2(v)+' m/s'],['V(x)', f2(Vx)+' J'],['K = E − V', f2(K)+' J'],['gaya F = −dV/dx', f2(-p.dV(x))+' N']]);
+  }));
+};
+
+/* ===================== SIM-3.2 Jatuh dengan hambatan udara ===================== */
+SIMS['SIM-3.2'] = function(){
+  const S = sim('SIM-3.2','Jatuh dengan Hambatan Udara',3,[
+    'Pilih air (tetes hujan) dan diameter 2 mm (Contoh 3.4). Bandingkan kecepatan terminal model kuadratik dengan 6,4 m/s.',
+    'Kecilkan diameter sampai model linear dan kuadratik berbeda jauh. Lihat rasio f<sub>kuad</sub>/f<sub>lin</sub>: model mana yang benar?',
+    'Bandingkan bola besi dan bola gabus berdiameter sama.'
+  ], 0.5);
+  const c1=card(S.side,'Bola');
+  const mats=[['7800','Besi'],['2500','Kaca'],['1000','Air'],['200','Gabus']];
+  let rho=1000;
+  seg(c1,mats,'1000',k=>{rho=+k; compute();});
+  const sD = slider(c1,'D','log₁₀ diameter (m)',-5,-0.5,0.05,Math.log10(0.002),x=>{const d=10**x; return d<1e-3?(d*1e6).toFixed(0)+' μm':d<1?(d*1e3).toFixed(1)+' mm':d.toFixed(2)+' m';});
+  sD.addEventListener('input',()=>compute());
+  const ro=readout(S.side);
+  const pl=makePlot(S.side,'Laju v(t) untuk tiga model',190);
+  let data=null, tCur=0;
+  function compute(){
+    const D=10**(+sD.value), m=rho*Math.PI/6*D**3, c1=1.6e-4*D, c2=0.25*D*D;
+    const vtl=m*G0/c1, vtq=Math.sqrt(m*G0/c2);
+    // nyata: c1 v + c2 v^2 = mg
+    const vtr=(-c1+Math.sqrt(c1*c1+4*c2*m*G0))/(2*c2);
+    const tEnd=Math.min(60,Math.max(0.01, 4*Math.min(vtr,vtq*2)/G0));
+    const N=300, lin=[], kua=[], vak=[], nyata=[];
+    let vv=0;
+    for(let i=0;i<=N;i++){ const t=tEnd*i/N;
+      vak.push([t,G0*t]); lin.push([t,vtl*(1-Math.exp(-G0*t/vtl))]); kua.push([t,vtq*Math.tanh(G0*t/vtq)]);
+      nyata.push([t,vv]); const h=tEnd/N; for(let k=0;k<20;k++){ vv+=(G0-(c1*vv+c2*vv*vv)/m)*h/20; }
+    }
+    data={D,m,c1,c2,vtl,vtq,vtr,tEnd,lin,kua,vak,nyata};
+    ro([['massa', m.toExponential(2)+' kg'],['v<sub>t</sub> linear = mg/c₁', vtl.toPrecision(3)+' m/s'],['v<sub>t</sub> kuadratik = √(mg/c₂)', vtq.toPrecision(3)+' m/s'],['v<sub>t</sub> gabungan (nyata)', vtr.toPrecision(3)+' m/s'],['rasio f<sub>kuad</sub>/f<sub>lin</sub> di v<sub>t</sub>', (1600*D*vtr).toPrecision(3)],['model yang tepat', 1600*D*vtr>10?'kuadratik':1600*D*vtr<0.1?'linear':'keduanya penting']]);
+    tCur=0;
+  }
+  compute();
+  S.cleanup.push(anim(dt=>{
+    if(!data) return; tCur+=dt*data.tEnd/5; if(tCur>data.tEnd*1.15) tCur=0;
+    const t=Math.min(tCur,data.tEnd), idx=Math.round(t/data.tEnd*300);
+    const top=Math.min(data.vak[300][1], Math.max(data.vtq,data.vtl,data.vtr)*1.3);
+    pl([{pts:data.vak,color:css('--muted'),dash:[4,4],label:'tanpa hambatan'},{pts:data.lin,color:css('--vB'),label:'linear'},{pts:data.kua,color:css('--vA'),label:'kuadratik'},{pts:data.nyata,color:css('--vR'),w:3,label:'gabungan',dot:data.nyata[idx]}],{xmin:0,xmax:data.tEnd,ymin:0,ymax:top,xl:'s',vline:t});
+    const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h;
+    const lanes=[['tanpa hambatan',data.vak,css('--muted')],['linear',data.lin,css('--vB')],['kuadratik',data.kua,css('--vA')],['gabungan',data.nyata,css('--vR')]];
+    const dist = arr => { let s=0; for(let i=1;i<=idx;i++) s+=(arr[i][1]+arr[i-1][1])/2*(data.tEnd/300); return s; };
+    const maxd = dist(data.nyata)>0 ? Math.max(...lanes.map(l=>{let s=0; for(let i=1;i<=300;i++) s+=(l[1][i][1]+l[1][i-1][1])/2*(data.tEnd/300); return s;})) : 1;
+    lanes.forEach((l,i)=>{ const x=W*(0.15+0.23*i), d=dist(l[1]); const y=20+(H-50)*Math.min(1,d/maxd);
+      ctx.strokeStyle=css('--grid'); ctx.beginPath(); ctx.moveTo(x,20); ctx.lineTo(x,H-30); ctx.stroke();
+      ctx.fillStyle=l[2]; ctx.beginPath(); ctx.arc(x,y,9,0,7); ctx.fill(); txt(ctx,l[0],x,H-12,l[2],'11px system-ui','center'); });
+    txt(ctx,'t = '+t.toPrecision(3)+' s',10,16,css('--muted'),'12px system-ui');
+  }));
+};
+
+/* ===================== SIM-4.1 Osilator pegas & bandul ===================== */
+SIMS['SIM-4.1'] = function(){
+  const S = sim('SIM-4.1','Osilator Pegas dan Bandul',4,[
+    'Mode pegas: ubah amplitudo. Apakah periode berubah?',
+    'Mode bandul: bandingkan periode terukur untuk simpangan 10°, 30°, 60°, dan 90° dengan T₀ = 2π√(L/g).',
+    'Bandingkan kapan v dan a mencapai maksimum pada grafik.'
+  ], 0.5);
+  let mode='pegas';
+  const c1=card(S.side,'Mode'); seg(c1,[['pegas','Pegas–massa'],['bandul','Bandul']],mode,k=>{mode=k; reset();});
+  const c2=card(S.side,'Parameter');
+  const sM=slider(c2,'m','m (kg) / L (m)',0.2,2,0.1,0.5,x=>x.toFixed(1));
+  const sK=slider(c2,'k','k (N/m)',5,100,1,20,x=>x.toFixed(0));
+  const sA=slider(c2,'A','Amplitudo (m) / θ₀ (°)',0.1,170,0.1,0.5,x=>x.toFixed(1));
+  [sM,sK,sA].forEach(s=>s.addEventListener('input',()=>reset()));
+  const ro=readout(S.side);
+  const pl=makePlot(S.side,'x (atau θ), v, a terhadap t',170);
+  const ph=makePlot(S.side,'Ruang fase',170);
+  let y=[0,0], t=0, hist=[], phase=[], lastCross=null, Tmeas=null, prev=0;
+  function reset(){ const A=+sA.value; y = mode==='pegas' ? [Math.min(A,1.5),0] : [Math.min(A,170)*Math.PI/180,0]; t=0; hist=[]; phase=[]; lastCross=null; Tmeas=null; prev=y[0]; }
+  reset();
+  S.cleanup.push(anim(dt=>{
+    const m=+sM.value, k=+sK.value, L=+sM.value;
+    const f = mode==='pegas' ? (t,y)=>[y[1],-k/m*y[0]] : (t,y)=>[y[1],-G0/L*Math.sin(y[0])];
+    for(let i=0;i<8;i++){ const yn=rk4(f,y,t,dt/8);
+      if(y[1]>0 && yn[1]<=0){ const tc=t+dt/8; if(lastCross!==null) Tmeas=tc-lastCross; lastCross=tc; }
+      y=yn; t+=dt/8; }
+    const a = f(t,y)[1];
+    hist.push([t,y[0],y[1],a]); if(hist.length>400) hist.shift(); phase.push([y[0],y[1]]); if(phase.length>800) phase.shift();
+    const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h;
+    let T0, E, Kx;
+    if(mode==='pegas'){
+      const sc=W*0.25, cx=W*0.5, cy=H*0.55, xw=W*0.1, xb=cx+y[0]*sc;
+      ctx.fillStyle=css('--axis'); ctx.fillRect(xw-8,cy-40,8,80);
+      ctx.strokeStyle=css('--ink'); ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(xw,cy); const n=14;
+      for(let i=1;i<=n;i++){ const xx=xw+(xb-25-xw)*i/n; ctx.lineTo(xx, cy+(i%2?-10:10)*(i<n?1:0)); } ctx.lineTo(xb-25,cy); ctx.stroke();
+      box(ctx,xb-25,cy-25,50,50,css('--accent'),null);
+      ctx.strokeStyle=css('--muted'); ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(cx,cy-60); ctx.lineTo(cx,cy+60); ctx.stroke(); ctx.setLineDash([]);
+      arrow(ctx,xb,cy-40,xb+y[1]*sc*0.4,cy-40,css('--vR'),2.4,'v'); arrow(ctx,xb,cy+40,xb+a*sc*0.05,cy+40,css('--vA'),2.4,'a');
+      T0=2*Math.PI*Math.sqrt(m/k); E=0.5*m*y[1]**2+0.5*k*y[0]**2; Kx=0.5*m*y[1]**2;
+    } else {
+      const px=W/2, py=H*0.08, len=H*0.8;
+      const bx=px+len*Math.sin(y[0]), by=py+len*Math.cos(y[0]);
+      ctx.strokeStyle=css('--ink'); ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(bx,by); ctx.stroke();
+      ctx.fillStyle=css('--accent'); ctx.beginPath(); ctx.arc(bx,by,14,0,7); ctx.fill();
+      ctx.strokeStyle=css('--muted'); ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py+len); ctx.stroke(); ctx.setLineDash([]);
+      T0=2*Math.PI*Math.sqrt(L/G0); E=0.5*L*L*y[1]**2+G0*L*(1-Math.cos(y[0])); Kx=0.5*L*L*y[1]**2;
+    }
+    const bw=14, bh=H*0.6, bx0=W-40;
+    box(ctx,bx0,H*0.2+bh*(1-(E>0?Kx/E:0)),bw,bh*(E>0?Kx/E:0),css('--vR'),null); box(ctx,bx0+bw+4,H*0.2+bh*(1-(E>0?(E-Kx)/E:0)),bw,bh*(E>0?(E-Kx)/E:0),css('--vB'),null);
+    txt(ctx,'K',bx0+2,H*0.2+bh+14,css('--vR'),'11px system-ui'); txt(ctx,'V',bx0+bw+6,H*0.2+bh+14,css('--vB'),'11px system-ui');
+    const t0=hist[0][0];
+    const mx = Math.max(...hist.map(h=>Math.abs(h[1])))||1, mv=Math.max(...hist.map(h=>Math.abs(h[2])))||1, ma=Math.max(...hist.map(h=>Math.abs(h[3])))||1;
+    pl([{pts:hist.map(h=>[h[0],h[1]/mx]),color:css('--vB'),label:'x/xₘₐₖₛ'},{pts:hist.map(h=>[h[0],h[2]/mv]),color:css('--vR'),label:'v/vₘₐₖₛ'},{pts:hist.map(h=>[h[0],h[3]/ma]),color:css('--vA'),label:'a/aₘₐₖₛ'}],{xmin:t0,xmax:Math.max(t0+1,t),ymin:-1.1,ymax:1.1,xl:'s'});
+    ph([{pts:phase,color:css('--vD'),dot:[y[0],y[1]]}]);
+    ro([['T₀ (rumus '+(mode==='pegas'?'2π√(m/k)':'2π√(L/g)')+')', T0.toFixed(3)+' s'],['T terukur', Tmeas?Tmeas.toFixed(3)+' s':'mengukur…'],['selisih', Tmeas?((Tmeas/T0-1)*100).toFixed(2)+' %':'—'],['amplitudo awal', mode==='pegas'?(+sA.value).toFixed(2)+' m':(+sA.value).toFixed(0)+'°']]);
+  }));
+};
+
+/* ===================== SIM-4.2 Osilasi teredam ===================== */
+SIMS['SIM-4.2'] = function(){
+  const S = sim('SIM-4.2','Osilasi Teredam',4,[
+    'Cari nilai γ/ω₀ yang membuat benda paling cepat kembali ke kesetimbangan (sampai |x| < 2% selamanya).',
+    'Bandingkan waktu kembali untuk γ/ω₀ = 1 dan 3.',
+    'Untuk redaman lemah, ukur dua puncak berurutan, hitung Q ≈ π/δ, dan bandingkan dengan nilai tampilan.'
+  ], 0.45);
+  const c1=card(S.side,'Redaman');
+  const sZ=slider(c1,'z','γ/ω₀',0,3,0.01,0.1,x=>x.toFixed(2));
+  const ro=readout(S.side);
+  const ph=makePlot(S.side,'Ruang fase (x, v/ω₀)',180);
+  const w0=2*Math.PI;
+  let tCur=0;
+  S.cleanup.push(anim(dt=>{
+    const z=+sZ.value, g=z*w0, Tend=6, N=600;
+    let y=[1,0]; const xs=[], ps=[]; let tset=null;
+    for(let i=0;i<=N;i++){ const t=Tend*i/N; xs.push([t,y[0]]); ps.push([y[0],y[1]/w0]);
+      for(let k=0;k<4;k++) y=rk4((t,y)=>[y[1],-2*g*y[1]-w0*w0*y[0]],y,t,Tend/N/4); }
+    for(let i=N;i>=0;i--){ if(Math.abs(xs[i][1])>0.02){ tset=xs[Math.min(N,i+1)][0]; break; } }
+    tCur=(tCur+dt)%Tend; const idx=Math.round(tCur/Tend*N);
+    const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h,L=40,B=24;
+    const X=t=>L+t/Tend*(W-L-10), Y=x=>H/2-x*(H/2-B);
+    ctx.strokeStyle=css('--axis'); ctx.beginPath(); ctx.moveTo(L,H/2); ctx.lineTo(W-10,H/2); ctx.moveTo(L,10); ctx.lineTo(L,H-10); ctx.stroke();
+    if(z<1){ ctx.strokeStyle=css('--muted'); ctx.setLineDash([4,4]); ctx.beginPath(); for(let i=0;i<=N;i++){ const t=Tend*i/N; ctx.lineTo(X(t),Y(Math.exp(-g*t))); } ctx.stroke(); ctx.beginPath(); for(let i=0;i<=N;i++){ const t=Tend*i/N; ctx.lineTo(X(t),Y(-Math.exp(-g*t))); } ctx.stroke(); ctx.setLineDash([]); }
+    ctx.strokeStyle=css('--vB'); ctx.lineWidth=2.5; ctx.beginPath(); xs.forEach((p,i)=>i?ctx.lineTo(X(p[0]),Y(p[1])):ctx.moveTo(X(p[0]),Y(p[1]))); ctx.stroke();
+    ctx.fillStyle=css('--vA'); ctx.beginPath(); ctx.arc(X(xs[idx][0]),Y(xs[idx][1]),6,0,7); ctx.fill();
+    ctx.globalAlpha=0.35; ctx.strokeStyle=css('--vR'); ctx.setLineDash([2,6]); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(L,Y(0.02)); ctx.lineTo(W-10,Y(0.02)); ctx.moveTo(L,Y(-0.02)); ctx.lineTo(W-10,Y(-0.02)); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1;
+    txt(ctx,'x(t)  (ω₀ = 2π rad/s, x₀ = 1)',L+6,18,css('--muted'),'12px system-ui'); txt(ctx,'t (s)',W-40,H-6,css('--muted'),'11px system-ui');
+    const reg = z<0.995?'kurang teredam':z<=1.005?'teredam kritis':'terlalu teredam';
+    ph([{pts:ps,color:css('--vD'),dot:ps[idx]}]);
+    ro([['jenis', '<b>'+reg+'</b>'],['Q = ω₀/2γ', z>0?(1/(2*z)).toFixed(2):'∞'],['ω<sub>d</sub>/ω₀', z<1?Math.sqrt(1-z*z).toFixed(4):'tidak berosilasi'],['waktu masuk pita ±2%', tset!==null && tset<Tend?tset.toFixed(2)+' s':'> 6 s']]);
+  }));
+};
+
+/* ===================== SIM-5.1 Kurva resonansi ===================== */
+SIMS['SIM-5.1'] = function(){
+  const S = sim('SIM-5.1','Kurva Resonansi',5,[
+    'Ulangi Contoh 5.1 (Q = 10): bandingkan amplitudo pada ω/ω₀ = 0,1; 1; dan 2.',
+    'Ukur lebar kurva pada setengah daya untuk Q = 5 dan Q = 20; periksa Δω ≈ ω₀/Q.',
+    'Bandingkan fase gaya (panah) dan simpangan balok di bawah, tepat di, dan di atas resonansi.'
+  ], 0.4);
+  const c1=card(S.side,'Parameter');
+  const sW=slider(c1,'w','ω/ω₀',0.05,3,0.01,1,x=>x.toFixed(2));
+  const sQ=slider(c1,'q','Q',1,50,0.5,10,x=>x.toFixed(1));
+  const ro=readout(S.side);
+  const pa=makePlot(S.side,'Amplitudo A/(F₀/k)',170), pf=makePlot(S.side,'Beda fase δ (°)',140);
+  let t=0;
+  S.cleanup.push(anim(dt=>{
+    t+=dt; const r=+sW.value, Q=+sQ.value, z=1/(2*Q);
+    const Af = r=>1/Math.sqrt((1-r*r)**2+(2*z*r)**2), df = r=>Math.atan2(2*z*r,1-r*r)*180/Math.PI;
+    const A=Af(r), d=df(r);
+    const pts=[], ptd=[], pw=[]; for(let i=0;i<=400;i++){ const rr=i/400*3; pts.push([rr,Af(rr)]); ptd.push([rr,df(rr)]); }
+    pa([{pts,color:css('--vB'),dot:[r,A]}],{xmin:0,xmax:3,ymin:0,ymax:Math.max(3,Q*1.1),xl:'ω/ω₀'});
+    pf([{pts:ptd,color:css('--vA'),dot:[r,d]}],{xmin:0,xmax:3,ymin:0,ymax:180,xl:'ω/ω₀'});
+    const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h, cy=H*0.55, w=2*Math.PI*0.6*r;
+    const x=A*Math.cos(w*t-d*Math.PI/180), F=Math.cos(w*t);
+    const sc=Math.min(W*0.3/Math.max(1,Math.min(A,Q)), W*0.3);
+    const xb=W/2+x*sc;
+    ctx.strokeStyle=css('--muted'); ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(W/2,cy-50); ctx.lineTo(W/2,cy+50); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle=css('--ink'); ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(20,cy); for(let i=1;i<=12;i++){ ctx.lineTo(20+(xb-22-20)*i/12, cy+(i%2?-9:9)*(i<12?1:0)); } ctx.stroke();
+    box(ctx,xb-22,cy-22,44,44,css('--accent'),null);
+    arrow(ctx,xb,cy-36,xb+F*60,cy-36,css('--vA'),2.6,'F');
+    txt(ctx,'panah merah = gaya pemaksa F₀cos ωt',10,18,css('--muted'),'12px system-ui');
+    ro([['A/(F₀/k)', A.toFixed(3)],['δ', d.toFixed(1)+'°'],['A di ω₀ (= Q)', Q.toFixed(1)],['lebar setengah daya ≈ ω₀/Q', (1/Q).toFixed(3)+' ω₀']]);
+  }));
+};
+
+/* ===================== SIM-5.2 Transien & layangan ===================== */
+SIMS['SIM-5.2'] = function(){
+  const S = sim('SIM-5.2','Transien dan Layangan',5,[
+    'Pilih ω/ω₀ = 0,95 dan γ/ω₀ kecil. Ukur periode layangan dan bandingkan dengan 2π/|ω − ω₀|.',
+    'Matikan redaman (γ = 0) dan atur ω = ω₀. Bandingkan dengan x = (F₀/2mω₀) t sin ω₀t.',
+    'Perbesar redaman. Seberapa cepat layangan hilang?'
+  ], 0.45);
+  const c1=card(S.side,'Parameter');
+  const sW=slider(c1,'w','ω/ω₀',0.5,1.5,0.005,0.95,x=>x.toFixed(3));
+  const sG=slider(c1,'g','γ/ω₀',0,0.3,0.005,0.01,x=>x.toFixed(3));
+  const ro=readout(S.side);
+  let tCur=0;
+  S.cleanup.push(anim(dt=>{
+    const w0=2*Math.PI, r=+sW.value, z=+sG.value, w=r*w0, g=z*w0, Tend=25, N=2500;
+    let y=[0,0]; const xs=[], ss=[];
+    const A=1/Math.sqrt((w0*w0-w*w)**2+(2*g*w)**2), dl=Math.atan2(2*g*w,w0*w0-w*w);
+    for(let i=0;i<=N;i++){ const t=Tend*i/N; xs.push([t,y[0]]); ss.push([t,A*Math.cos(w*t-dl)]); y=rk4((t,y)=>[y[1],Math.cos(w*t)-2*g*y[1]-w0*w0*y[0]],y,t,Tend/N); }
+    const mx=Math.max(...xs.map(p=>Math.abs(p[1])))||1;
+    tCur=(tCur+dt*3)%Tend; const idx=Math.round(tCur/Tend*N);
+    const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h,L=10;
+    const X=t=>L+t/Tend*(W-20), Y=x=>H/2-x/mx*(H/2-14);
+    ctx.strokeStyle=css('--axis'); ctx.beginPath(); ctx.moveTo(L,H/2); ctx.lineTo(W-10,H/2); ctx.stroke();
+    ctx.strokeStyle=css('--vA'); ctx.lineWidth=1.3; ctx.setLineDash([4,3]); ctx.beginPath(); ss.forEach((p,i)=>i?ctx.lineTo(X(p[0]),Y(p[1])):ctx.moveTo(X(p[0]),Y(p[1]))); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle=css('--vB'); ctx.lineWidth=1.6; ctx.beginPath(); xs.forEach((p,i)=>i?ctx.lineTo(X(p[0]),Y(p[1])):ctx.moveTo(X(p[0]),Y(p[1]))); ctx.stroke();
+    ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(X(xs[idx][0]),Y(xs[idx][1]),4,0,7); ctx.fill();
+    txt(ctx,'biru: x(t) mulai dari diam    merah putus-putus: keadaan tunak',L+6,16,css('--muted'),'12px system-ui');
+    ro([['periode layangan 2π/|ω−ω₀|', Math.abs(w-w0)>1e-6?(2*Math.PI/Math.abs(w-w0)).toFixed(2)+' s':'∞ (tepat resonansi)'],['waktu luruh transien 1/γ', g>0?(1/g).toFixed(2)+' s':'∞'],['jendela waktu', '25 s (ω₀ = 2π rad/s)']]);
+  }));
+};
+
+/* ===================== SIM-6.1 Proyektil dengan hambatan udara ===================== */
+SIMS['SIM-6.1'] = function(){
+  const S = sim('SIM-6.1','Proyektil dengan Hambatan Udara',6,[
+    'Matikan hambatan, atur v₀ = 20 m/s dan θ = 30° (Contoh 6.1). Bandingkan jangkauan dengan 35,3 m.',
+    'Aktifkan hambatan, pilih bola tenis lalu bola pingpong, dan tekan "Cari sudut optimum". Apakah 45°?',
+    'Amati v<sub>x</sub> pada tabel: tetapkah nilainya selama terbang?'
+  ], 0.55);
+  const balls={tenis:{m:0.057,D:0.066,n:'Bola tenis'},pingpong:{m:0.0027,D:0.040,n:'Bola pingpong'},sepak:{m:0.43,D:0.22,n:'Bola sepak'},peluru:{m:4.0,D:0.11,n:'Peluru tolak'}};
+  let bk='tenis', drag=true;
+  const c1=card(S.side,'Bola');
+  seg(c1,Object.keys(balls).map(k=>[k,balls[k].n]),bk,k=>{bk=k;run();});
+  const cD=check(c1,'Hambatan udara kuadratik',true); cD.onchange=()=>{drag=cD.checked;run();};
+  const c2=card(S.side,'Peluncuran');
+  const sV=slider(c2,'v0','v₀ (m/s)',2,50,0.5,20,x=>x.toFixed(1));
+  const sT=slider(c2,'th','θ (°)',1,89,0.5,30,x=>x.toFixed(1)+'°');
+  [sV,sT].forEach(s=>s.addEventListener('input',run));
+  const ro=readout(S.side);
+  let opt=null;
+  buttons(c2,[['Cari sudut optimum',()=>{ let best=0,bt=0; for(let a=5;a<=85;a+=0.5){ const r=fly(+sV.value,a,drag).R; if(r>best){best=r;bt=a;} } opt=[bt,best]; sT.value=bt; sT.dispatchEvent(new Event('input')); }]]);
+  function fly(v0,deg,useDrag){
+    const b=balls[bk], c2=0.25*b.D*b.D, th=deg*Math.PI/180; let x=0,y=0,vx=v0*Math.cos(th),vy=v0*Math.sin(th),t=0,H=0; const pts=[[0,0]]; const dt=0.002;
+    while(y>=0 && t<60){ const v=Math.hypot(vx,vy), k=useDrag?c2*v/b.m:0; vx+=-k*vx*dt; vy+=(-G0-k*vy)*dt; x+=vx*dt; y+=vy*dt; t+=dt; if(y>H)H=y; if(Math.round(t/dt)%10===0) pts.push([x,Math.max(0,y)]); }
+    return {pts,R:x,H,t,vxEnd:vx};
+  }
+  let vac, dr, tAnim=0;
+  function run(){ vac=fly(+sV.value,+sT.value,false); dr=fly(+sV.value,+sT.value,true); tAnim=0; }
+  run();
+  S.cleanup.push(anim(dt=>{
+    tAnim+=dt; const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h;
+    const Rm=Math.max(vac.R, 5), Hm=Math.max(vac.H,1);
+    const sc=Math.min((W-40)/Rm, (H-40)/Hm), X=x=>20+x*sc, Y=y=>H-20-y*sc;
+    ctx.strokeStyle=css('--axis'); ctx.beginPath(); ctx.moveTo(10,Y(0)); ctx.lineTo(W-10,Y(0)); ctx.stroke();
+    const path=(p,col,dash,n)=>{ ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=2.4; if(dash) ctx.setLineDash(dash); ctx.beginPath(); p.slice(0,n).forEach((q,i)=>i?ctx.lineTo(X(q[0]),Y(q[1])):ctx.moveTo(X(q[0]),Y(q[1]))); ctx.stroke(); ctx.restore(); };
+    const nA=Math.min(vac.pts.length, Math.floor(tAnim/0.02)+1), nB=Math.min(dr.pts.length, Math.floor(tAnim/0.02)+1);
+    path(vac.pts,css('--muted'),[5,4],nA);
+    if(drag){ path(dr.pts,css('--vA'),null,nB); const q=dr.pts[nB-1]; ctx.fillStyle=css('--vA'); ctx.beginPath(); ctx.arc(X(q[0]),Y(q[1]),6,0,7); ctx.fill(); }
+    const q=vac.pts[nA-1]; ctx.fillStyle=css('--muted'); ctx.beginPath(); ctx.arc(X(q[0]),Y(q[1]),5,0,7); ctx.fill();
+    txt(ctx,'putus-putus: ruang hampa'+(drag?'   merah: dengan hambatan udara':''),12,16,css('--muted'),'12px system-ui');
+    if(tAnim>Math.max(vac.t,dr.t)*1.0+1.5) tAnim=0;
+    ro([['jangkauan (hampa)', vac.R.toFixed(2)+' m'],['jangkauan (hambatan)', drag?dr.R.toFixed(2)+' m':'—'],['tinggi maks (hampa / hambatan)', vac.H.toFixed(2)+' / '+(drag?dr.H.toFixed(2):'—')+' m'],['waktu terbang', vac.t.toFixed(2)+' / '+(drag?dr.t.toFixed(2):'—')+' s'],['v<sub>x</sub> awal → akhir (hambatan)', ((+sV.value)*Math.cos(+sT.value*Math.PI/180)).toFixed(2)+' → '+(drag?dr.vxEnd.toFixed(2):'—')+' m/s'],['sudut optimum (hasil cari)', opt?opt[0].toFixed(1)+'° (R = '+opt[1].toFixed(1)+' m)':'tekan tombol']]);
+  }));
+};
+
+/* ===================== SIM-6.2 Usaha sepanjang lintasan ===================== */
+SIMS['SIM-6.2'] = function(){
+  const S = sim('SIM-6.2','Usaha Sepanjang Lintasan',6,[
+    'Pilih medan konservatif F = (2xy + 1, x²). Bandingkan usaha dari A ke B pada ketiga lintasan.',
+    'Pilih medan berpusar F = (−y, x) (Contoh 6.3) dan ulangi.',
+    'Pilih lintasan tertutup (lingkaran penuh). Berapa usahanya untuk tiap medan?'
+  ], 0.75, 4);
+  const fields={kons:{n:'Konservatif F = (2xy+1, x²)',F:(x,y)=>[2*x*y+1,x*x]},pusar:{n:'Berpusar F = (−y, x)',F:(x,y)=>[-y,x]}};
+  const paths={lurus:{n:'Garis lurus',r:s=>[1-s,s]},asal:{n:'Lewat titik asal',r:s=>s<0.5?[1-2*s,0]:[0,2*s-1]},busur:{n:'Busur lingkaran',r:s=>[Math.cos(Math.PI*s/2),Math.sin(Math.PI*s/2)]},tutup:{n:'Lingkaran penuh (tertutup)',r:s=>[Math.cos(2*Math.PI*s),Math.sin(2*Math.PI*s)]}};
+  let fk='kons', pk='lurus';
+  const c1=card(S.side,'Medan gaya'); seg(c1,[['kons','Konservatif'],['pusar','Berpusar']],fk,k=>{fk=k;comp();});
+  const c2=card(S.side,'Lintasan'); seg(c2,Object.keys(paths).map(k=>[k,paths[k].n]),pk,k=>{pk=k;comp();});
+  const ro=readout(S.side,'Usaha');
+  const pl=makePlot(S.side,'Usaha kumulatif W(s) sepanjang lintasan',150);
+  let cum=[], s=0;
+  const work=(f,p)=>{ const N=2000; let W=0; const out=[[0,0]]; for(let i=0;i<N;i++){ const a=p.r(i/N), b=p.r((i+1)/N), m=[(a[0]+b[0])/2,(a[1]+b[1])/2], F=f.F(m[0],m[1]); W+=F[0]*(b[0]-a[0])+F[1]*(b[1]-a[1]); if(i%20===19) out.push([(i+1)/N,W]); } return {W,out}; };
+  function comp(){ const r=work(fields[fk],paths[pk]); cum=r.out; s=0;
+    const all=Object.keys(paths).map(k=>[paths[k].n, work(fields[fk],paths[k]).W.toFixed(3)+' J']);
+    ro([['medan', fields[fk].n]].concat(all.map(a=>[a[0],a[1]])));
+  }
+  comp();
+  S.cleanup.push(anim(dt=>{
+    s=(s+dt*0.25)%1.15; const ss=Math.min(1,s);
+    const {ctx,cv,v}=S; v.update(); grid(ctx,v,cv,0.5);
+    const f=fields[fk];
+    for(let x=-1.75;x<=1.76;x+=0.25) for(let y=-1.5;y<=1.51;y+=0.25){ const F=f.F(x,y), m=Math.hypot(F[0],F[1])||1, L=0.18*Math.min(1,m/2)/m; arrow(ctx,v.X(x),v.Y(y),v.X(x+F[0]*L),v.Y(y+F[1]*L),css('--axis'),1.2); }
+    const p=paths[pk]; ctx.strokeStyle=css('--vA'); ctx.lineWidth=3; ctx.beginPath(); for(let i=0;i<=200;i++){ const q=p.r(i/200); i?ctx.lineTo(v.X(q[0]),v.Y(q[1])):ctx.moveTo(v.X(q[0]),v.Y(q[1])); } ctx.stroke();
+    const q=p.r(ss); ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(v.X(q[0]),v.Y(q[1]),6,0,7); ctx.fill();
+    [[1,0,'A'],[0,1,'B']].forEach(a=>{ ctx.fillStyle=css('--vB'); ctx.beginPath(); ctx.arc(v.X(a[0]),v.Y(a[1]),5,0,7); ctx.fill(); txt(ctx,a[2],v.X(a[0])+8,v.Y(a[1])-8,css('--vB'),'bold 14px system-ui'); });
+    const idx=Math.min(cum.length-1,Math.round(ss*(cum.length-1)));
+    pl([{pts:cum,color:css('--vA'),dot:cum[idx]}],{xmin:0,xmax:1,xl:'s'});
+  }));
+};
+
+/* ===================== SIM-7.1 Komidi putar ===================== */
+SIMS['SIM-7.1'] = function(){
+  const S = sim('SIM-7.1','Bola di Komidi Putar',7,[
+    'Lempar bola dari pusat. Mengapa lintasannya lurus di panel kiri tetapi melengkung di panel kanan?',
+    'Aktifkan panah gaya fiktif di panel kanan: ungu = Coriolis, jingga = sentrifugal.',
+    'Balik arah putaran piringan (ω negatif). Ke mana bola membelok sekarang?'
+  ], 0.5);
+  const c1=card(S.side,'Parameter');
+  const sW=slider(c1,'w','ω piringan (rad/s)',-2,2,0.05,1,x=>x.toFixed(2));
+  const sV=slider(c1,'v','laju lemparan (m/s)',0.2,2,0.05,0.8,x=>x.toFixed(2));
+  let from='pusat'; seg(c1,[['pusat','Dari pusat ke luar'],['tepi','Dari tepi ke pusat']],from,k=>{from=k;reset();});
+  const cF=check(c1,'Tampilkan gaya fiktif (panel kanan)',true);
+  [sW,sV].forEach(s=>s.addEventListener('input',()=>reset()));
+  const ro=readout(S.side);
+  let t=0, trailI=[], trailR=[];
+  function reset(){ t=0; trailI=[]; trailR=[]; }
+  S.cleanup.push(anim(dt=>{
+    const w=+sW.value, v=+sV.value; t+=dt*0.8;
+    let r0, V; if(from==='pusat'){ r0=[0,0]; V=[v,0]; } else { r0=[1,0]; V=[-v,w*1]; }
+    const ri=[r0[0]+V[0]*t, r0[1]+V[1]*t]; if(Math.hypot(ri[0],ri[1])>1.15 || t>8){ reset(); return; }
+    const c=Math.cos(-w*t), s=Math.sin(-w*t), rr=[c*ri[0]-s*ri[1], s*ri[0]+c*ri[1]];
+    trailI.push(ri); trailR.push(rr);
+    const vI=V, vr0=[vI[0]+w*ri[1], vI[1]-w*ri[0]], vr=[c*vr0[0]-s*vr0[1], s*vr0[0]+c*vr0[1]];
+    const cen=[w*w*rr[0], w*w*rr[1]], cor=[2*w*vr[1], -2*w*vr[0]];
+    const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h, R=Math.min(W/4-14,H/2-24);
+    const panel=(cx,cy,rot,trail,title)=>{
+      ctx.fillStyle=css('--chip'); ctx.strokeStyle=css('--axis'); ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.fill(); ctx.stroke();
+      for(let k=0;k<6;k++){ const a=rot+k*Math.PI/3; ctx.strokeStyle=css('--grid'); ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+R*Math.cos(a),cy-R*Math.sin(a)); ctx.stroke(); }
+      ctx.fillStyle=css('--vB'); ctx.beginPath(); ctx.arc(cx+R*Math.cos(rot),cy-R*Math.sin(rot),6,0,7); ctx.fill();
+      ctx.strokeStyle=css('--vA'); ctx.lineWidth=2.2; ctx.beginPath(); trail.forEach((p,i)=>i?ctx.lineTo(cx+p[0]*R,cy-p[1]*R):ctx.moveTo(cx+p[0]*R,cy-p[1]*R)); ctx.stroke();
+      const q=trail[trail.length-1]; ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(cx+q[0]*R,cy-q[1]*R,6,0,7); ctx.fill();
+      txt(ctx,title,cx,cy+R+18,css('--muted'),'12px system-ui','center');
+    };
+    panel(W*0.25,H/2,w*t,trailI,'Dilihat dari luar (inersia)');
+    panel(W*0.75,H/2,0,trailR,'Dilihat penumpang (berputar)');
+    if(cF.checked){ const q=rr, cx=W*0.75+q[0]*R, cy=H/2-q[1]*R, k=R*0.25; arrow(ctx,cx,cy,cx+cen[0]*k,cy-cen[1]*k,css('--vAcc'),2.2); arrow(ctx,cx,cy,cx+cor[0]*k,cy-cor[1]*k,css('--vD'),2.2); }
+    txt(ctx,'titik biru = penanda di tepi piringan',10,16,css('--muted'),'11px system-ui');
+    ro([['ω', w.toFixed(2)+' rad/s ('+(w>0?'berlawanan jarum jam':w<0?'searah jarum jam':'diam')+')'],['percepatan sentrifugal ω²r′', Math.hypot(...cen).toFixed(2)+' m/s²'],['percepatan Coriolis 2ωv′', Math.hypot(...cor).toFixed(2)+' m/s²'],['laju relatif v′', Math.hypot(...vr).toFixed(2)+' m/s']]);
+  }));
+};
+
+/* ===================== SIM-7.2 Bandul Foucault ===================== */
+SIMS['SIM-7.2'] = function(){
+  const S = sim('SIM-7.2','Bandul Foucault',7,[
+    'Bandingkan pola jejak di kutub utara (90°), Bandung (−6,9°), dan khatulistiwa (0°).',
+    'Catat periode presesi yang ditampilkan untuk beberapa lintang dan periksa T = 23,93 jam / |sin λ|.',
+    'Pindahkan lintang dari utara ke selatan. Apa yang berubah pada arah presesi?'
+  ], 0.75, 2.6);
+  const c1=card(S.side,'Parameter');
+  const sL=slider(c1,'lat','Lintang λ (°)',-90,90,0.1,-6.9,x=>x.toFixed(1)+'°'+(x>0?' LU':x<0?' LS':''));
+  const sN=slider(c1,'n','Rotasi Bumi diperbesar ×',1,20000,1,4000,x=>'×'+x.toFixed(0));
+  const sS=slider(c1,'sp','Kecepatan tayang',1,20,1,6,x=>x+'×');
+  buttons(c1,[['Ulang',()=>{t=0;tr=[];}]]);
+  [sL,sN].forEach(s=>s.addEventListener('input',()=>{t=0;tr=[];}));
+  const ro=readout(S.side);
+  let t=0, tr=[];
+  const w0=2*Math.PI/16, A=1;
+  S.cleanup.push(anim(dt=>{
+    const lam=(+sL.value)*Math.PI/180, Om=7.2921e-5*(+sN.value)*Math.sin(lam), wp=Math.sqrt(w0*w0+Om*Om);
+    t+=dt*(+sS.value);
+    const re=A*Math.cos(wp*t), im=A*(Om/wp)*Math.sin(wp*t), c=Math.cos(-Om*t), s=Math.sin(-Om*t);
+    const x=c*re-s*im, y=s*re+c*im;
+    tr.push([x,y]); if(tr.length>6000) tr.shift();
+    const {ctx,cv,v}=S; v.update(); S.clear();
+    ctx.strokeStyle=css('--grid'); ctx.beginPath(); ctx.arc(v.X(0),v.Y(0),v.s*1.05,0,7); ctx.stroke();
+    ['U','S','T','B'].forEach((d,i)=>{ const a=[Math.PI/2,-Math.PI/2,0,Math.PI][i]; txt(ctx,d,v.X(1.18*Math.cos(a)),v.Y(1.18*Math.sin(a))+4,css('--muted'),'bold 12px system-ui','center'); });
+    ctx.strokeStyle=css('--vB'); ctx.lineWidth=1; ctx.globalAlpha=0.6; ctx.beginPath(); tr.forEach((p,i)=>i?ctx.lineTo(v.X(p[0]),v.Y(p[1])):ctx.moveTo(v.X(p[0]),v.Y(p[1]))); ctx.stroke(); ctx.globalAlpha=1;
+    const ang=-Om*t; ctx.strokeStyle=css('--vA'); ctx.setLineDash([5,4]); ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(v.X(-Math.cos(ang)),v.Y(-Math.sin(ang))); ctx.lineTo(v.X(Math.cos(ang)),v.Y(Math.sin(ang))); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(v.X(x),v.Y(y),7,0,7); ctx.fill();
+    txt(ctx,'dilihat dari atas; garis merah = bidang ayun',10,16,css('--muted'),'11px system-ui');
+    const sl=Math.sin(lam), Tp=Math.abs(sl)>1e-4?23.934/Math.abs(sl):Infinity;
+    ro([['periode presesi nyata', isFinite(Tp)?Tp.toFixed(1)+' jam = '+(Tp/24).toFixed(2)+' hari':'tak berhingga (tidak berpresesi)'],['arah presesi (dari atas)', Math.abs(sl)<1e-4?'—':sl>0?'searah jarum jam':'berlawanan jarum jam'],['sudut bidang ayun', ((ang*180/Math.PI)%360).toFixed(1)+'°'],['catatan','rotasi Bumi diperbesar agar presesi terlihat']]);
+  }));
+};
+
+/* ===================== SIM-8.1 Medan gravitasi bola ===================== */
+SIMS['SIM-8.1'] = function(){
+  const S = sim('SIM-8.1','Medan Gravitasi Bola dan Kulit',8,[
+    'Mode bola pejal: di jarak berapa medan terbesar?',
+    'Mode kulit: bagaimana medan di dalam kulit? Mengapa potensialnya tetap, bukan nol?',
+    'Mode terowongan: amati benda berosilasi melalui pusat; bandingkan periodenya dengan 84 menit.'
+  ], 0.62, 7);
+  let mode='pejal';
+  const c1=card(S.side,'Mode'); seg(c1,[['pejal','Bola pejal'],['kulit','Kulit bola'],['terow','Terowongan']],mode,k=>{mode=k;});
+  const sR=slider(c1,'r','Jarak titik uji r/R',0,3,0.01,1.5,x=>x.toFixed(2));
+  const ro=readout(S.side);
+  const pg=makePlot(S.side,'g(r)/g(R)',140), pp=makePlot(S.side,'Φ(r) dalam GM/R',140);
+  const g=(r,m)=> m==='kulit' ? (r<1?0:1/(r*r)) : (r<1?r:1/(r*r));
+  const ph=(r,m)=> m==='kulit' ? (r<1?-1:-1/r) : (r<1?-(3-r*r)/2:-1/r);
+  let t=0;
+  S.cleanup.push(anim(dt=>{
+    t+=dt; const m=mode==='terow'?'pejal':mode; const r=+sR.value;
+    const pts=[], pts2=[]; for(let i=0;i<=300;i++){ const rr=3*i/300; pts.push([rr,g(rr,m)]); pts2.push([rr,ph(rr,m)]); }
+    pg([{pts,color:css('--vB'),dot:mode==='terow'?undefined:[r,g(r,m)]}],{xmin:0,xmax:3,ymin:0,ymax:1.1,xl:'r/R'});
+    pp([{pts:pts2,color:css('--vD'),dot:mode==='terow'?undefined:[r,ph(r,m)]}],{xmin:0,xmax:3,ymin:-1.6,ymax:0,xl:'r/R'});
+    const {ctx,cv,v}=S; v.update(); S.clear();
+    if(m==='kulit'){ ctx.strokeStyle=css('--vB'); ctx.lineWidth=8; ctx.beginPath(); ctx.arc(v.X(0),v.Y(0),v.s,0,7); ctx.stroke(); }
+    else { const gr=ctx.createRadialGradient(v.X(0),v.Y(0),2,v.X(0),v.Y(0),v.s); gr.addColorStop(0,css('--vAcc')); gr.addColorStop(1,css('--vB')); ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(v.X(0),v.Y(0),v.s,0,7); ctx.fill(); }
+    if(mode==='terow'){
+      ctx.strokeStyle=css('--panel'); ctx.lineWidth=10; ctx.beginPath(); ctx.moveTo(v.X(-1),v.Y(0)); ctx.lineTo(v.X(1),v.Y(0)); ctx.stroke();
+      const x=Math.cos(2*Math.PI*t/6); ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(v.X(x),v.Y(0),7,0,7); ctx.fill();
+      arrow(ctx,v.X(x),v.Y(0)-14,v.X(x-x*0.8),v.Y(0)-14,css('--vA'),2.2,'g');
+      const T=2*Math.PI*Math.sqrt(6.371e6/9.8)/60;
+      ro([['periode osilasi 2π√(R/g)', T.toFixed(1)+' menit'],['waktu ke sisi lain', (T/2).toFixed(1)+' menit'],['gaya', 'F = −(mg/R)·x  (seperti pegas)']]);
+    } else {
+      const a=Math.PI/6, px=r*Math.cos(a), py=r*Math.sin(a), gg=g(r,m);
+      ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(v.X(px),v.Y(py),6,0,7); ctx.fill();
+      if(r>0.001 && gg>1e-6) arrow(ctx,v.X(px),v.Y(py),v.X(px-Math.cos(a)*gg*1.2),v.Y(py-Math.sin(a)*gg*1.2),css('--vA'),2.6,'g');
+      ro([['r/R', r.toFixed(2)],['g/g(R)', gg.toFixed(3)],['Φ/(GM/R)', ph(r,m).toFixed(3)],['rumus', m==='kulit'?(r<1?'g = 0 (di dalam kulit)':'g = GM/r²'):(r<1?'g = GMr/R³ (linear)':'g = GM/r²')]]);
+    }
+  }));
+};
+
+/* ===================== SIM-8.2 Meriam Newton ===================== */
+SIMS['SIM-8.2'] = function(){
+  const S = sim('SIM-8.2','Meriam Newton',8,[
+    'Naikkan laju sedikit demi sedikit. Pada laju berapa peluru tidak pernah menyentuh tanah lagi?',
+    'Bandingkan laju itu dengan √(GM/r) yang ditampilkan.',
+    'Naikkan laju sampai orbit menjadi elips memanjang, lalu terbuka. Catat laju ketika peluru lepas dari Bumi.'
+  ], 0.75, 5.2);
+  const GM=3.986e14, R=6.371e6, r0=R+5e5;
+  const c1=card(S.side,'Tembakan mendatar dari puncak gunung 500 km');
+  const sV=slider(c1,'v','v₀ (km/s)',0,12,0.05,6,x=>x.toFixed(2));
+  sV.addEventListener('input',reset);
+  buttons(c1,[['Tembak ulang',reset]]);
+  const ro=readout(S.side);
+  let y,t,tr,status;
+  function reset(){ y=[0,r0,(+sV.value)*1000,0]; t=0; tr=[[0,r0]]; status='terbang'; }
+  reset();
+  const f=(t,y)=>{ const r=Math.hypot(y[0],y[1]), k=-GM/(r*r*r); return [y[2],y[3],k*y[0],k*y[1]]; };
+  S.cleanup.push(anim(dt=>{
+    if(status==='terbang'){ for(let i=0;i<60;i++){ y=rk4(f,y,t,10); t+=10; const r=Math.hypot(y[0],y[1]); if(r<R){status='menghantam tanah';break;} if(r>7*R){status='lepas dari Bumi';break;} if(t>3.5*86400){status='terus mengorbit';break;} } tr.push([y[0],y[1]]); if(tr.length>4000) tr.shift(); }
+    const {ctx,cv,v}=S; v.update(); S.clear();
+    const sc=1/R;
+    ctx.fillStyle=css('--vB'); ctx.globalAlpha=0.85; ctx.beginPath(); ctx.arc(v.X(0),v.Y(0),v.s,0,7); ctx.fill(); ctx.globalAlpha=1;
+    ctx.fillStyle=css('--vR'); ctx.beginPath(); ctx.moveTo(v.X(-0.06),v.Y(0.995)); ctx.lineTo(v.X(0),v.Y(r0*sc)); ctx.lineTo(v.X(0.06),v.Y(0.995)); ctx.fill();
+    ctx.strokeStyle=css('--vA'); ctx.lineWidth=2; ctx.beginPath(); tr.forEach((p,i)=>i?ctx.lineTo(v.X(p[0]*sc),v.Y(p[1]*sc)):ctx.moveTo(v.X(p[0]*sc),v.Y(p[1]*sc))); ctx.stroke();
+    ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(v.X(y[0]*sc),v.Y(y[1]*sc),5,0,7); ctx.fill();
+    ro([['laju orbit lingkaran √(GM/r)', (Math.sqrt(GM/r0)/1000).toFixed(2)+' km/s'],['kecepatan lepas √(2GM/r)', (Math.sqrt(2*GM/r0)/1000).toFixed(2)+' km/s'],['waktu terbang', (t/60).toFixed(1)+' menit'],['status', '<b>'+status+'</b>']]);
+  }));
+};
+
+/* ===================== SIM-9.1 Orbit Kepler ===================== */
+SIMS['SIM-9.1'] = function(){
+  const S = sim('SIM-9.1','Orbit Kepler dan Hukum Luas',9,[
+    'Periksa bahwa luas setiap arsiran (waktu sama, T/12) sama, lihat nilai dA/dt.',
+    'Bandingkan laju di perihelion dan aphelion dengan r<sub>p</sub>v<sub>p</sub> = r<sub>a</sub>v<sub>a</sub>.',
+    'Ubah laju awal; catat T dan a, lalu periksa T²/a³ (satuan tahun dan AU) selalu 1.'
+  ], 0.75, 7);
+  const GM=4*Math.PI*Math.PI;
+  const c1=card(S.side,'Planet mulai di r = 1 AU, kecepatan tegak lurus');
+  const sV=slider(c1,'v','v₀ (AU/tahun)',3.5,8.6,0.01,5.2,x=>x.toFixed(2)+' (lingkaran: 6,28)');
+  sV.addEventListener('input',reset);
+  const ro=readout(S.side);
+  let y,t,secs,T,a,e,rmin,rmax,vmax,vmin;
+  function reset(){ const v0=+sV.value; y=[1,0,0,v0]; t=0; const E=v0*v0/2-GM/1; a=-GM/(2*E); T=Math.sqrt(a**3); const L=v0; e=Math.sqrt(Math.max(0,1+2*E*L*L/(GM*GM))); rmin=a*(1-e); rmax=a*(1+e); vmax=L/rmin; vmin=L/rmax; secs=[[[1,0]]]; }
+  reset();
+  const f=(t,y)=>{ const r=Math.hypot(y[0],y[1]), k=-GM/(r*r*r); return [y[2],y[3],k*y[0],k*y[1]]; };
+  S.cleanup.push(anim(dt=>{
+    const step=T/600; for(let i=0;i<6;i++){ y=rk4(f,y,t,step); t+=step; const k=Math.floor(t/(T/12)); if(k>=12){ reset(); return; } while(secs.length<=k) secs.push([secs[secs.length-1].slice(-1)[0]]); secs[k].push([y[0],y[1]]); }
+    const {ctx,cv,v}=S; v.update(); S.clear(); const sc=Math.min(2.5, 3/Math.max(rmax,0.3)), cx=0;
+    const P=p=>[v.X(p[0]*sc*1.0+cx),v.Y(p[1]*sc)]; const sg=(+sV.value)<2*Math.PI?-1:1;
+    secs.forEach((sg,i)=>{ ctx.fillStyle=i%2?css('--vB'):css('--vAcc'); ctx.globalAlpha=0.25; ctx.beginPath(); ctx.moveTo(...P([0,0])); sg.forEach(p=>ctx.lineTo(...P(p))); ctx.closePath(); ctx.fill(); ctx.globalAlpha=1; });
+    ctx.strokeStyle=css('--muted'); ctx.lineWidth=1.2; ctx.beginPath(); for(let i=0;i<=360;i++){ const th=i*Math.PI/180, r=a*(1-e*e)/(1+sg*e*Math.cos(th)); const p=P([r*Math.cos(th),r*Math.sin(th)]); i?ctx.lineTo(...p):ctx.moveTo(...p); } ctx.stroke();
+    ctx.fillStyle='#e6a800'; ctx.beginPath(); ctx.arc(...P([0,0]),10,0,7); ctx.fill();
+    ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(...P([y[0],y[1]]),6,0,7); ctx.fill();
+    const r=Math.hypot(y[0],y[1]), vv=Math.hypot(y[2],y[3]), dA=(y[0]*y[3]-y[1]*y[2])/2;
+    ro([['r', r.toFixed(3)+' AU'],['laju v', vv.toFixed(3)+' AU/thn'],['dA/dt = |r×v|/2', dA.toFixed(4)+' AU²/thn (tetap)'],['a, e', a.toFixed(3)+' AU, '+e.toFixed(3)],['periode T', T.toFixed(3)+' tahun'],['T²/a³', (T*T/(a**3)).toFixed(4)],['r<sub>p</sub>v<sub>p</sub> dan r<sub>a</sub>v<sub>a</sub>', (rmin*vmax).toFixed(3)+' dan '+(rmax*vmin).toFixed(3)]]);
+  }));
+};
+
+/* ===================== SIM-9.2 Potensial efektif ===================== */
+SIMS['SIM-9.2'] = function(){
+  const S = sim('SIM-9.2','Potensial Efektif',9,[
+    'Turunkan E sampai menyentuh dasar kurva U<sub>ef</sub>. Bagaimana bentuk orbitnya?',
+    'Naikkan E di atas nol. Apa yang terjadi pada r<sub>maks</sub> dan bentuk orbit?',
+    'Kecilkan L dengan E tetap. Apa yang terjadi pada r<sub>min</sub>?'
+  ], 0.75, 9);
+  const c1=card(S.side,'Satuan: GM = m = 1');
+  const sL=slider(c1,'L','Momentum sudut L',0.5,1.5,0.01,1,x=>x.toFixed(2));
+  const sE=slider(c1,'E','Energi total E',-1.9,0.6,0.005,-0.3,x=>x.toFixed(3));
+  const ro=readout(S.side);
+  const pu=makePlot(S.side,'U<sub>ef</sub>(r) = L²/2r² − 1/r',190);
+  let th=0;
+  S.cleanup.push(anim(dt=>{
+    const L=+sL.value; let E=+sE.value; const Emin=-1/(2*L*L); if(E<Emin) E=Emin;
+    const e=Math.sqrt(Math.max(0,1+2*E*L*L)), p=L*L;
+    let rmin, rmax;
+    if(Math.abs(E)<1e-9){ rmin=L*L/2; rmax=Infinity; }
+    else { const d=Math.sqrt(Math.max(0,1+2*E*L*L)); const r1=(-1+d)/(2*E), r2=(-1-d)/(2*E); if(E<0){ rmin=Math.min(r1,r2); rmax=Math.max(r1,r2);} else { rmin=r1; rmax=Infinity; } }
+    const pts=[]; for(let i=0;i<=400;i++){ const r=0.15+i/400*7.85; pts.push([r,L*L/(2*r*r)-1/r]); }
+    pu([{pts,color:css('--vB')},{pts:[[0.15,E],[8,E]],color:css('--vA'),dash:[5,4]}],{xmin:0,xmax:8,ymin:-2.2,ymax:1,xl:'r'});
+    const r=p/(1+e*Math.cos(th)); th+=dt*Math.min(6, L/(r*r))*1.2; if(e>=1 && Math.cos(th)<-1/e+0.02){ th=-Math.acos(-1/e)+0.02; }
+    const {ctx,cv,v}=S; v.update(); S.clear();
+    ctx.strokeStyle=css('--vR'); ctx.lineWidth=2; ctx.beginPath(); let st=false;
+    for(let i=0;i<=720;i++){ const tt=-Math.PI+i*Math.PI/360, den=1+e*Math.cos(tt); if(den<=0.02){st=false;continue;} const rr=p/den; if(rr>12){st=false;continue;} const x=rr*Math.cos(tt), y=rr*Math.sin(tt); if(!st){ctx.moveTo(v.X(x),v.Y(y));st=true;} else ctx.lineTo(v.X(x),v.Y(y)); } ctx.stroke();
+    ctx.fillStyle='#e6a800'; ctx.beginPath(); ctx.arc(v.X(0),v.Y(0),8,0,7); ctx.fill();
+    if(r>0 && r<12){ ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(v.X(r*Math.cos(th)),v.Y(r*Math.sin(th)),6,0,7); ctx.fill(); }
+    ctx.strokeStyle=css('--muted'); ctx.setLineDash([3,4]); ctx.beginPath(); ctx.arc(v.X(0),v.Y(0),rmin*v.s,0,7); ctx.stroke(); if(isFinite(rmax)){ ctx.beginPath(); ctx.arc(v.X(0),v.Y(0),rmax*v.s,0,7); ctx.stroke(); } ctx.setLineDash([]);
+    const shape = e<0.005?'lingkaran':e<1?'elips':Math.abs(e-1)<0.005?'parabola':'hiperbola';
+    ro([['E (dibatasi ≥ U<sub>ef,min</sub>)', E.toFixed(3)],['U<sub>ef,min</sub> = −1/2L²', Emin.toFixed(3)],['eksentrisitas e', e.toFixed(3)],['bentuk orbit', '<b>'+shape+'</b>'],['r<sub>min</sub>', rmin.toFixed(3)],['r<sub>maks</sub>', isFinite(rmax)?rmax.toFixed(3):'∞']]);
+  }));
+};
+
+/* ===================== SIM-10.1 Tumbukan 1D ===================== */
+SIMS['SIM-10.1'] = function(){
+  const S = sim('SIM-10.1','Tumbukan Satu Dimensi',10,[
+    'Atur m₁ = 2 kg, v₁ = 3 m/s, m₂ = 1 kg, v₂ = 0, e = 1 (Contoh 10.2). Periksa v₁′ = 1 m/s dan v₂′ = 4 m/s.',
+    'Turunkan e dari 1 ke 0. Apa yang terjadi pada momentum total dan energi kinetik?',
+    'Aktifkan "kerangka pusat massa" dan bandingkan.'
+  ], 0.4);
+  const c1=card(S.side,'Parameter');
+  const s1=slider(c1,'m1','m₁ (kg)',0.2,10,0.1,2,x=>x.toFixed(1)), s2=slider(c1,'m2','m₂ (kg)',0.2,10,0.1,1,x=>x.toFixed(1));
+  const u1=slider(c1,'v1','v₁ (m/s)',-4,4,0.1,3,x=>x.toFixed(1)), u2=slider(c1,'v2','v₂ (m/s)',-4,4,0.1,0,x=>x.toFixed(1));
+  const se=slider(c1,'e','koefisien restitusi e',0,1,0.01,1,x=>x.toFixed(2));
+  const cm=check(c1,'Tampilkan di kerangka pusat massa',false);
+  [s1,s2,u1,u2,se].forEach(s=>s.addEventListener('input',reset)); cm.onchange=reset;
+  const ro=readout(S.side);
+  const pb=makePlot(S.side,'Sebelum (kiri) dan sesudah (kanan)',150);
+  let x1,x2,v1,v2,done,t;
+  function reset(){ x1=-2; x2=1; v1=+u1.value; v2=+u2.value; done=false; t=0; }
+  reset();
+  S.cleanup.push(anim(dt=>{
+    const m1=+s1.value,m2=+s2.value,e=+se.value, w1=0.25+0.05*Math.sqrt(m1), w2=0.25+0.05*Math.sqrt(m2);
+    t+=dt;
+    if(!done && x2-x1 <= (w1+w2)/2 && v1>v2){ const V=(m1*v1+m2*v2)/(m1+m2); const n1=V-e*m2*(v1-v2)/(m1+m2), n2=V+e*m1*(v1-v2)/(m1+m2); v1=n1; v2=n2; done=true; }
+    x1+=v1*dt; x2+=v2*dt; if(t>6||Math.abs(x1)>8||Math.abs(x2)>8) reset();
+    const V=(m1*(+u1.value)+m2*(+u2.value))/(m1+m2), off=cm.checked?V:0;
+    const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h, sc=W/10, X=x=>W/2+(x-(cm.checked?V*t:0))*sc, cy=H*0.6;
+    ctx.strokeStyle=css('--axis'); ctx.beginPath(); ctx.moveTo(0,cy+30); ctx.lineTo(W,cy+30); ctx.stroke();
+    box(ctx,X(x1)-w1*sc/2,cy+30-w1*sc,w1*sc,w1*sc,css('--vA'),null); box(ctx,X(x2)-w2*sc/2,cy+30-w2*sc,w2*sc,w2*sc,css('--vB'),null);
+    arrow(ctx,X(x1),cy-w1*sc+10,X(x1)+(v1-off)*sc*0.4,cy-w1*sc+10,css('--ink'),2.2); arrow(ctx,X(x2),cy-w2*sc+10,X(x2)+(v2-off)*sc*0.4,cy-w2*sc+10,css('--ink'),2.2);
+    txt(ctx,cm.checked?'kerangka pusat massa: momentum total = 0':'kerangka laboratorium',10,18,css('--muted'),'12px system-ui');
+    const a1=+u1.value,a2=+u2.value; const Vc=V; const b1=Vc-e*m2*(a1-a2)/(m1+m2), b2=Vc+e*m1*(a1-a2)/(m1+m2); const willHit=a1>a2;
+    const f1=willHit?b1:a1, f2v=willHit?b2:a2;
+    const P0=m1*a1+m2*a2, P1=m1*f1+m2*f2v, K0=0.5*m1*a1*a1+0.5*m2*a2*a2, K1=0.5*m1*f1*f1+0.5*m2*f2v*f2v;
+    pb([{pts:[[0,P0],[1,P0]],color:css('--vR'),w:8,label:'momentum (kg·m/s)'},{pts:[[2,P1],[3,P1]],color:css('--vR'),w:8},{pts:[[0.2,K0],[1.2,K0]],color:css('--vD'),w:8,label:'energi kinetik (J)'},{pts:[[2.2,K1],[3.2,K1]],color:css('--vD'),w:8}],{xmin:-0.3,xmax:3.5,ymin:Math.min(0,P0,P1)-1,ymax:Math.max(P0,P1,K0,K1)+1});
+    ro([['v₁′, v₂′ (setelah)', willHit?f2(b1)+', '+f2(b2)+' m/s':'tidak bertumbukan'],['momentum sebelum → sesudah', f2(P0)+' → '+f2(P1)],['energi kinetik sebelum → sesudah', f2(K0)+' → '+f2(K1)+' J'],['energi yang hilang', K0>0?((1-K1/K0)*100).toFixed(1)+' %':'—'],['kecepatan pusat massa', f2(V)+' m/s']]);
+  }));
+};
+
+/* ===================== SIM-10.2 Roket ===================== */
+SIMS['SIM-10.2'] = function(){
+  const S = sim('SIM-10.2','Roket',10,[
+    'Atur u = 3000 m/s, rasio massa 10, gravitasi mati (Contoh 10.4). Bandingkan Δv dengan 6,9 km/s.',
+    'Ubah laju pembakaran. Apakah Δv akhir berubah tanpa gravitasi? Dengan gravitasi?',
+    'Aktifkan "dua tingkat" dan bandingkan Δv-nya dengan satu tingkat.'
+  ], 0.4);
+  const c1=card(S.side,'Parameter');
+  const sU=slider(c1,'u','laju gas buang u (m/s)',1000,4500,50,3000,x=>x.toFixed(0));
+  const sR=slider(c1,'R','rasio massa m₀/m<sub>akhir</sub>',1.5,20,0.1,10,x=>x.toFixed(1));
+  const sB=slider(c1,'b','waktu pembakaran (s)',20,400,5,150,x=>x.toFixed(0));
+  const cg=check(c1,'Gravitasi (peluncuran vertikal)',false), c2=check(c1,'Dua tingkat (tangki tingkat 1 dibuang)',false);
+  [sU,sR,sB].forEach(s=>s.addEventListener('input',run)); cg.onchange=run; c2.onchange=run;
+  const ro=readout(S.side);
+  const pv=makePlot(S.side,'Laju v(t) (km/s)',180);
+  let data, tA=0;
+  function run(){
+    const u=+sU.value, R=+sR.value, tb=+sB.value, m0=100, mf=m0/R, fuel=m0-mf, rate=fuel/tb;
+    const dry=mf, tank1=c2.checked?0.5*dry:0;
+    let m=m0, v=0, t=0, pts=[[0,0]], dropped=false; const dt=0.1;
+    while(t<tb){ if(c2.checked && !dropped && t>=tb/2){ m-=tank1; dropped=true; } const a=u*rate/m-(cg.checked?G0:0); v+=a*dt; m-=rate*dt; t+=dt; pts.push([t,v/1000]); }
+    data={pts, ts:u*Math.log(R), v, tb};
+    tA=0;
+    ro([['Δv Tsiolkovsky u ln(m₀/m<sub>f</sub>)', (u*Math.log(R)/1000).toFixed(2)+' km/s'],['v akhir simulasi', (v/1000).toFixed(2)+' km/s'],['kehilangan gravitasi g·t<sub>bakar</sub>', cg.checked?(G0*tb/1000).toFixed(2)+' km/s':'0'],['gaya dorong awal (massa 100 t)', (u*rate*1000/1e6).toFixed(2)+' MN'],['catatan', c2.checked?'separuh massa kering dibuang di tengah pembakaran':'satu tingkat']]);
+  }
+  run();
+  S.cleanup.push(anim(dt=>{
+    tA+=dt*data.tb/4; if(tA>data.tb*1.3) tA=0; const idx=Math.min(data.pts.length-1,Math.round(tA/0.1));
+    pv([{pts:data.pts,color:css('--vA'),dot:data.pts[idx]},{pts:[[0,data.ts/1000],[data.tb,data.ts/1000]],color:css('--muted'),dash:[4,4],label:'Tsiolkovsky'}],{xmin:0,xmax:data.tb,ymin:0,xl:'s'});
+    const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h, frac=idx/(data.pts.length-1);
+    const x=W*0.15+frac*W*0.7, y=H/2;
+    ctx.fillStyle=css('--muted'); ctx.beginPath(); ctx.moveTo(x+40,y); ctx.lineTo(x+20,y-12); ctx.lineTo(x-30,y-12); ctx.lineTo(x-30,y+12); ctx.lineTo(x+20,y+12); ctx.closePath(); ctx.fill();
+    if(frac<1){ for(let i=0;i<10;i++){ ctx.fillStyle=css('--vAcc'); ctx.globalAlpha=0.6*Math.random(); ctx.beginPath(); ctx.arc(x-35-Math.random()*50,y+(Math.random()-0.5)*16,3+Math.random()*4,0,7); ctx.fill(); } ctx.globalAlpha=1; }
+    txt(ctx,'t = '+(idx*0.1).toFixed(0)+' s   v = '+data.pts[idx][1].toFixed(2)+' km/s',10,18,css('--muted'),'12px system-ui');
+  }));
+};
+
+/* ===================== SIM-11.1 Momen inersia ===================== */
+SIMS['SIM-11.1'] = function(){
+  const S = sim('SIM-11.1','Momen Inersia',11,[
+    'Mode lomba: benda mana yang paling cepat berputar jika diberi momen gaya yang sama? Mengapa?',
+    'Pilih batang dan geser sumbu dari pusat ke ujung. Amati I naik sebanding d².',
+    'Cari bentuk dengan jari-jari girasi k = √(I/M) terbesar terhadap pusatnya.'
+  ], 0.55, 6);
+  const shapes={batang:{n:'Batang (L = 2R)',I:1/12*4,t:'ML²/12'},cakram:{n:'Cakram pejal',I:0.5,t:'MR²/2'},cincin:{n:'Cincin',I:1,t:'MR²'},bola:{n:'Bola pejal',I:0.4,t:'2MR²/5'},kulit:{n:'Kulit bola',I:2/3,t:'2MR²/3'}};
+  let mode='satu', sk='batang';
+  const c0=card(S.side,'Mode'); seg(c0,[['satu','Satu benda'],['lomba','Lomba (momen gaya sama)']],mode,k=>{mode=k;t=0;});
+  const c1=card(S.side,'Benda (M = 1 kg, R = 1 m)'); seg(c1,Object.keys(shapes).map(k=>[k,shapes[k].n]),sk,k=>{sk=k;});
+  const sD=slider(c1,'d','jarak sumbu ke pusat massa d (m)',0,1,0.01,0,x=>x.toFixed(2));
+  const ro=readout(S.side);
+  let t=0;
+  S.cleanup.push(anim(dt=>{
+    t+=dt; if(t>6) t=0;
+    const {ctx,cv,v}=S; v.update(); S.clear();
+    const drawShape=(k,cx,cy,sc,ang)=>{ ctx.save(); ctx.translate(cx,cy); ctx.rotate(-ang); ctx.fillStyle=css('--accent'); ctx.strokeStyle=css('--accent'); ctx.globalAlpha=0.85;
+      if(k==='batang'){ ctx.fillRect(-sc,-6,2*sc,12); } else if(k==='cincin'){ ctx.lineWidth=7; ctx.beginPath(); ctx.arc(0,0,sc,0,7); ctx.stroke(); } else if(k==='kulit'){ ctx.lineWidth=4; ctx.beginPath(); ctx.arc(0,0,sc,0,7); ctx.stroke(); ctx.globalAlpha=0.2; ctx.fill(); } else { const g=ctx.createRadialGradient(-sc*0.3,-sc*0.3,2,0,0,sc); g.addColorStop(0,css('--accent-soft')); g.addColorStop(1,css('--accent')); ctx.fillStyle=k==='bola'?g:css('--accent'); ctx.beginPath(); ctx.arc(0,0,sc,0,7); ctx.fill(); }
+      ctx.globalAlpha=1; ctx.strokeStyle=css('--panel'); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(sc*0.9,0); ctx.stroke(); ctx.restore(); };
+    if(mode==='satu'){
+      const sh=shapes[sk], d=+sD.value, I=sh.I+d*d;
+      const ang=0.6*t; const sc=v.s*1.4, axis=[v.X(0),v.Y(0)];
+      const cx=axis[0]+d*sc*Math.cos(ang), cy=axis[1]-d*sc*Math.sin(ang);
+      drawShape(sk,cx,cy,sc,ang);
+      ctx.fillStyle=css('--vA'); ctx.beginPath(); ctx.arc(...axis,6,0,7); ctx.fill(); txt(ctx,'sumbu',axis[0]+8,axis[1]+18,css('--vA'),'12px system-ui');
+      ro([['I<sub>pm</sub> = '+sh.t, sh.I.toFixed(3)+' kg·m²'],['Md²', (d*d).toFixed(3)+' kg·m²'],['I = I<sub>pm</sub> + Md²', '<b>'+I.toFixed(3)+' kg·m²</b>'],['jari-jari girasi k = √(I/M)', Math.sqrt(I).toFixed(3)+' m']]);
+    } else {
+      const keys=['cakram','cincin','bola','kulit'], tau=1; const rows=[];
+      keys.forEach((k,i)=>{ const I=shapes[k].I, al=tau/I, ang=0.5*al*t*t; const cx=v.X(-4.5+3*i), cy=v.Y(0.5); drawShape(k,cx,cy,v.s*1.1,ang); txt(ctx,shapes[k].n,cx,cy+v.s*1.1+18,css('--ink'),'12px system-ui','center'); txt(ctx,(ang/(2*Math.PI)).toFixed(1)+' putaran',cx,cy+v.s*1.1+34,css('--muted'),'11px system-ui','center'); rows.push([shapes[k].n, 'α = τ/I = '+al.toFixed(2)+' rad/s²']); });
+      txt(ctx,'momen gaya τ = 1 N·m pada semua benda, t = '+t.toFixed(1)+' s',10,18,css('--muted'),'12px system-ui');
+      ro(rows);
+    }
+  }));
+};
+
+/* ===================== SIM-11.2 Bandul fisis ===================== */
+SIMS['SIM-11.2'] = function(){
+  const S = sim('SIM-11.2','Bandul Fisis',11,[
+    'Gantung batang 1 m di ujungnya (d = 0,5 m). Bandingkan periode dengan 1,64 s (Contoh 11.4).',
+    'Cari d yang memberi periode terkecil; bandingkan dengan L/√12 ≈ 0,289 m.',
+    'Temukan dua titik poros berbeda yang memberi periode sama (prinsip bandul Kater).'
+  ], 0.7, 2.4);
+  const c1=card(S.side,'Batang homogen L = 1 m');
+  const sD=slider(c1,'d','jarak poros ke pusat massa d (m)',0.02,0.5,0.005,0.5,x=>x.toFixed(3));
+  sD.addEventListener('input',reset);
+  const ro=readout(S.side);
+  const pt=makePlot(S.side,'Periode T(d) dan posisi sekarang',170);
+  let y,t,last,Tm;
+  function reset(){ y=[10*Math.PI/180,0]; t=0; last=null; Tm=null; }
+  reset();
+  S.cleanup.push(anim(dt=>{
+    const L=1, d=+sD.value, k2=L*L/12, Iop=k2+d*d;
+    for(let i=0;i<8;i++){ const yn=rk4((t,y)=>[y[1],-G0*d/Iop*Math.sin(y[0])],y,t,dt/8); if(y[1]>0&&yn[1]<=0){ const tc=t+dt/8; if(last!==null) Tm=tc-last; last=tc; } y=yn; t+=dt/8; }
+    const T=2*Math.PI*Math.sqrt(Iop/(G0*d));
+    const pts=[]; for(let i=1;i<=200;i++){ const dd=0.02+0.48*i/200; pts.push([dd,2*Math.PI*Math.sqrt((k2+dd*dd)/(G0*dd))]); }
+    pt([{pts,color:css('--vB'),dot:[d,T]}],{xmin:0,xmax:0.5,ymin:1.4,ymax:2.6,xl:'d (m)',vline:Math.sqrt(k2)});
+    const {ctx,cv,v}=S; v.update(); S.clear(); const sc=v.s;
+    const piv=[v.X(0),v.Y(0.75)];
+    ctx.save(); ctx.translate(...piv); ctx.rotate(y[0]);
+    const top=-(0.5-d)*sc, bot=(0.5+d)*sc;
+    ctx.fillStyle=css('--accent'); ctx.globalAlpha=0.85; ctx.fillRect(-0.035*sc,top,0.07*sc,bot-top); ctx.globalAlpha=1;
+    for(let i=0;i<=10;i++){ ctx.fillStyle=css('--panel'); ctx.beginPath(); ctx.arc(0,top+(bot-top)*i/10,3,0,7); ctx.fill(); }
+    ctx.fillStyle=css('--vA'); ctx.beginPath(); ctx.arc(0,d*sc,5,0,7); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(...piv,6,0,7); ctx.fill();
+    txt(ctx,'titik merah = pusat massa',10,18,css('--muted'),'12px system-ui');
+    ro([['I terhadap poros = M(L²/12 + d²)', Iop.toFixed(4)+' kg·m² (M = 1)'],['T rumus 2π√(I/Mgd)', T.toFixed(3)+' s'],['T terukur', Tm?Tm.toFixed(3)+' s':'mengukur…'],['panjang ekuivalen I/(Md)', (Iop/d).toFixed(3)+' m'],['d untuk T minimum = L/√12', Math.sqrt(k2).toFixed(3)+' m']]);
+  }));
+};
+
+/* ===================== SIM-12.1 Lomba menggelinding ===================== */
+SIMS['SIM-12.1'] = function(){
+  const S = sim('SIM-12.1','Lomba Menggelinding',12,[
+    'Jalankan lomba pada bidang setinggi 2 m (Contoh 12.1). Bandingkan laju akhir dengan 5,29; 5,11; dan 4,43 m/s.',
+    'Ubah massa dan jari-jari bola pejal. Apakah urutan finis berubah?',
+    'Turunkan μ<sub>s</sub> sampai benda mulai selip; bandingkan dengan μ<sub>s</sub> ≥ β tan θ/(1+β).'
+  ], 0.6);
+  const lanes=[['Bola pejal',0.4,'#1d7a3a'],['Silinder pejal',0.5,'#1f5fbf'],['Kulit bola',2/3,'#8e44ad'],['Cincin',1,'#c0392b'],['Balok licin',0,'#888']];
+  const c1=card(S.side,'Parameter');
+  const sT=slider(c1,'th','sudut θ (°)',5,60,1,20,x=>x+'°'), sMu=slider(c1,'mu','μ (statis ≈ kinetis)',0,1,0.01,0.5,x=>x.toFixed(2));
+  const sM=slider(c1,'m','massa bola pejal (kg)',0.1,10,0.1,1,x=>x.toFixed(1)), sR=slider(c1,'r','jari-jari bola pejal (cm)',2,15,0.5,5,x=>x.toFixed(1));
+  [sT,sMu,sM,sR].forEach(s=>s.addEventListener('input',reset));
+  buttons(c1,[['Mulai ulang',reset]]);
+  const ro=readout(S.side);
+  let t=0;
+  function reset(){ t=0; }
+  S.cleanup.push(anim(dt=>{
+    t+=dt; const th=(+sT.value)*Math.PI/180, mu=+sMu.value, h=2, Lr=h/Math.sin(th);
+    const res=lanes.map(l=>{ const b=l[1]; let a, slip=false;
+      if(b===0){ a=G0*Math.sin(th); } else { const need=b/(1+b)*Math.tan(th); if(mu>=need) a=G0*Math.sin(th)/(1+b); else { slip=true; a=G0*(Math.sin(th)-mu*Math.cos(th)); } }
+      const tf=Math.sqrt(2*Lr/a), s=Math.min(Lr,0.5*a*t*t), vf=a*tf; return {l,a,slip,tf,s,vf,b}; });
+    if(t>Math.max(...res.map(r=>r.tf))+2) t=0;
+    const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h, x0=30, x1=W-20, lh=(H-30)/lanes.length;
+    res.forEach((r,i)=>{ const y=20+i*lh+lh/2, x=x0+(x1-x0)*r.s/Lr;
+      ctx.strokeStyle=css('--grid'); ctx.beginPath(); ctx.moveTo(x0,y+12); ctx.lineTo(x1,y+12); ctx.stroke();
+      ctx.fillStyle=r.l[2]; if(r.b===0){ ctx.fillRect(x-12,y-10,24,22); } else { ctx.beginPath(); ctx.arc(x,y,12,0,7); ctx.fill(); const ang=r.s/0.05*(r.slip?0.5:1); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+11*Math.cos(ang),y+11*Math.sin(ang)); ctx.stroke(); }
+      txt(ctx,r.l[0]+(r.slip?' (selip!)':''),x0,y-14,css('--ink'),'12px system-ui'); if(r.s>=Lr) txt(ctx,'finis '+r.tf.toFixed(2)+' s',x1,y-14,r.l[2],'bold 12px system-ui','right'); });
+    ctx.strokeStyle=css('--vA'); ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(x1,10); ctx.lineTo(x1,H-10); ctx.stroke(); ctx.setLineDash([]);
+    ro(res.map(r=>[r.l[0]+(r.b?' (β='+r.b.toFixed(2)+')':''), 'a = '+r.a.toFixed(2)+' m/s², v<sub>akhir</sub> = '+r.vf.toFixed(2)+' m/s'+(r.b&&!r.slip?', K<sub>rot</sub>/K = '+(r.b/(1+r.b)).toFixed(2):'')]).concat([['massa & jari-jari bola', (+sM.value).toFixed(1)+' kg, '+(+sR.value).toFixed(1)+' cm (tidak memengaruhi hasil)']]));
+  }));
+};
+
+/* ===================== SIM-12.2 Meluncur ke menggelinding ===================== */
+SIMS['SIM-12.2'] = function(){
+  const S = sim('SIM-12.2','Dari Meluncur ke Menggelinding',12,[
+    'Atur v₀ = 8 m/s, tanpa putaran, μ<sub>k</sub> = 0,2 (Contoh 12.2). Bandingkan t dan v akhir dengan 1,17 s dan 5,71 m/s.',
+    'Ubah μ<sub>k</sub>. Apakah laju akhir berubah?',
+    'Beri putaran balik yang besar (Rω₀ negatif). Dapatkah bola berbalik arah?'
+  ], 0.35);
+  const c1=card(S.side,'Bola pejal (R = 0,11 m)');
+  const sV=slider(c1,'v','v₀ (m/s)',0,12,0.1,8,x=>x.toFixed(1)), sW=slider(c1,'w','Rω₀ (m/s), negatif = putaran balik',-20,12,0.1,0,x=>x.toFixed(1)), sM=slider(c1,'mu','μ<sub>k</sub>',0.02,0.6,0.01,0.2,x=>x.toFixed(2));
+  [sV,sW,sM].forEach(s=>s.addEventListener('input',run));
+  const ro=readout(S.side);
+  const pl=makePlot(S.side,'v<sub>pm</sub> (biru) dan Rω (merah)',180);
+  let data, tA=0;
+  function run(){
+    const mu=+sM.value; let v=+sV.value, u=+sW.value, x=0, ang=0, t=0, tr=null; const dt=0.002, R=0.11; const pv=[[0,v]], pw=[[0,u]], xs=[[0,0,0]];
+    while(t<6){ const slip=v-u; if(Math.abs(slip)>1e-4){ const s=Math.sign(slip); v+=-s*mu*G0*dt; u+=s*2.5*mu*G0*dt; if(Math.sign(v-u)!==s){ const m=(v+2.5*u)/3.5; v=m;u=m; if(tr===null) tr=[t,v,x]; } } else { if(tr===null) tr=[t,v,x]; }
+      x+=v*dt; ang+=u/R*dt; t+=dt; if(Math.round(t/dt)%10===0){ pv.push([t,v]); pw.push([t,u]); xs.push([t,x,ang]); } }
+    data={pv,pw,xs,tr}; tA=0;
+    ro([['saat mulai menggelinding', tr?tr[0].toFixed(2)+' s':'—'],['laju saat itu', tr?tr[1].toFixed(2)+' m/s':'—'],['jarak selama selip', tr?tr[2].toFixed(2)+' m':'—'],['rumus (tanpa putaran awal) 5v₀/7', (5*(+sV.value)/7).toFixed(2)+' m/s']]);
+  }
+  run();
+  S.cleanup.push(anim(dt=>{
+    tA+=dt; if(tA>6) tA=0; const i=Math.min(data.xs.length-1,Math.round(tA/0.02));
+    pl([{pts:data.pv,color:css('--vB'),dot:data.pv[i]},{pts:data.pw,color:css('--vA'),dot:data.pw[i]}],{xmin:0,xmax:6,xl:'s',vline:data.tr?data.tr[0]:undefined});
+    const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h, xmax=Math.max(1,...data.xs.map(p=>Math.abs(p[1]))), sc=(W-60)/xmax/1.05;
+    const X=x=>30+x*sc, y=H-24, r=16, q=data.xs[i];
+    ctx.strokeStyle=css('--axis'); ctx.beginPath(); ctx.moveTo(10,y+r); ctx.lineTo(W-10,y+r); ctx.stroke();
+    ctx.fillStyle=css('--vD'); ctx.beginPath(); ctx.arc(X(q[1]),y,r,0,7); ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(X(q[1]),y); ctx.lineTo(X(q[1])+r*Math.sin(q[2]),y-r*Math.cos(q[2])); ctx.stroke();
+    if(data.tr){ ctx.strokeStyle=css('--vR'); ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(X(data.tr[2]),10); ctx.lineTo(X(data.tr[2]),y+r); ctx.stroke(); ctx.setLineDash([]); txt(ctx,'mulai menggelinding',X(data.tr[2])+4,22,css('--vR'),'11px system-ui'); }
+  }));
+};
+
+/* ===================== SIM-13.1 Manik pada cincin berputar ===================== */
+SIMS['SIM-13.1'] = function(){
+  const S = sim('SIM-13.1','Manik pada Cincin Berputar',13,[
+    'Naikkan ω perlahan dari nol. Pada nilai berapa dasar cincin berhenti menjadi tempat setimbang yang stabil?',
+    'Bandingkan sudut setimbang manik dengan cos θ₀ = g/(Rω²).',
+    'Perhatikan diagram bifurkasi θ₀ terhadap ω di panel samping.'
+  ], 0.7, 0.32);
+  const Rr=0.1, wc=Math.sqrt(G0/Rr);
+  const c1=card(S.side,'R = 10 cm, ω<sub>c</sub> = √(g/R) ≈ 9,90 rad/s');
+  const sW=slider(c1,'w','ω (rad/s)',0,25,0.1,6,x=>x.toFixed(1));
+  const cD=check(c1,'Sedikit gesekan (agar manik menetap)',true);
+  buttons(c1,[['Ganggu manik',()=>{y[1]+=3;}]]);
+  const ro=readout(S.side);
+  const pu=makePlot(S.side,'Potensial efektif U(θ) (kerangka berputar)',150), pb=makePlot(S.side,'Bifurkasi: θ₀ (°) terhadap ω',150);
+  let y=[0.3,0], phi=0;
+  S.cleanup.push(anim(dt=>{
+    const w=+sW.value, c=cD.checked?1.0:0;
+    for(let i=0;i<10;i++) y=rk4((t,y)=>[y[1],Math.sin(y[0])*(w*w*Math.cos(y[0])-G0/Rr)-c*y[1]],y,0,dt/10);
+    if(y[0]>Math.PI) y[0]-=2*Math.PI; if(y[0]<-Math.PI) y[0]+=2*Math.PI;
+    phi+=w*dt;
+    const U=th=>-0.5*Rr*Rr*w*w*Math.sin(th)**2-G0*Rr*Math.cos(th);
+    const pts=[]; for(let i=0;i<=200;i++){ const th=-Math.PI+i*2*Math.PI/200; pts.push([th*180/Math.PI,U(th)]); }
+    pu([{pts,color:css('--vB'),dot:[y[0]*180/Math.PI,U(y[0])]}],{xmin:-180,xmax:180,xl:'θ (°)'});
+    const b1=[],b2=[],b3=[]; for(let i=0;i<=200;i++){ const ww=25*i/200; b1.push([ww,0]); if(ww>wc){ const a=Math.acos(G0/(Rr*ww*ww))*180/Math.PI; b2.push([ww,a]); b3.push([ww,-a]); } }
+    const th0 = w>wc?Math.acos(G0/(Rr*w*w))*180/Math.PI:0;
+    pb([{pts:b1.filter(p=>p[0]<=wc),color:css('--vR')},{pts:b1.filter(p=>p[0]>=wc),color:css('--muted'),dash:[4,4]},{pts:b2,color:css('--vR')},{pts:b3,color:css('--vR'),dot:[w,th0]}],{xmin:0,xmax:25,ymin:-95,ymax:95,xl:'rad/s'});
+    const {ctx,cv,v}=S; v.update(); S.clear(); const R=v.s*0.1;
+    const sx=Math.cos(phi);
+    ctx.strokeStyle=css('--axis'); ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(v.X(0),v.Y(0.14)); ctx.lineTo(v.X(0),v.Y(-0.14)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle=css('--ink'); ctx.lineWidth=2.5; ctx.beginPath(); ctx.ellipse(v.X(0),v.Y(0),Math.abs(sx)*R+1,R,0,0,7); ctx.stroke();
+    const bx=v.X(0)+R*Math.sin(y[0])*sx, by=v.Y(0)+R*Math.cos(y[0]);
+    ctx.fillStyle=css('--vA'); ctx.beginPath(); ctx.arc(bx,by,8,0,7); ctx.fill();
+    ro([['ω / ω<sub>c</sub>', (w/wc).toFixed(2)],['θ manik', (y[0]*180/Math.PI).toFixed(1)+'°'],['θ₀ teori', w>wc?'±'+th0.toFixed(1)+'°':'0° (dasar stabil)'],['frekuensi osilasi kecil', w<wc?Math.sqrt(G0/Rr-w*w).toFixed(2)+' rad/s di dasar':(w*Math.sin(th0*Math.PI/180)).toFixed(2)+' rad/s di θ₀']]);
+  }));
+};
+
+/* ===================== SIM-13.2 Bandul ganda ===================== */
+SIMS['SIM-13.2'] = function(){
+  const S = sim('SIM-13.2','Bandul Ganda dan Kekacauan',13,[
+    'Dengan simpangan kecil (10°), apakah kedua bandul tetap berdekatan?',
+    'Dengan simpangan besar (120°), setelah berapa detik keduanya berpisah (selisih > 10°)?',
+    'Amati energi total: tetapkah nilainya? Apa artinya bagi ketelitian perhitungan numerik?'
+  ], 0.75, 5);
+  const c1=card(S.side,'m₁ = m₂ = 1 kg, l₁ = l₂ = 1 m');
+  const sA=slider(c1,'a','simpangan awal θ₁ = θ₂ (°)',5,175,1,120,x=>x+'°');
+  const sD=slider(c1,'d','selisih awal bandul kedua (°)',0.0001,1,0.0001,0.001,x=>x.toFixed(4)+'°');
+  [sA,sD].forEach(s=>s.addEventListener('input',reset)); buttons(c1,[['Ulang',reset]]);
+  const ro=readout(S.side);
+  const pe=makePlot(S.side,'Selisih θ₂ kedua bandul (°)',150);
+  let A,B,t,tr1,tr2,diff,tsep,E0;
+  const g=G0;
+  const f=(t,y)=>{ const [a1,a2,w1,w2]=y, d=a1-a2, den=3-Math.cos(2*d);
+    const dw1=(-g*3*Math.sin(a1)-g*Math.sin(a1-2*a2)-2*Math.sin(d)*(w2*w2+w1*w1*Math.cos(d)))/den;
+    const dw2=(2*Math.sin(d)*(w1*w1*2+g*2*Math.cos(a1)+w2*w2*Math.cos(d)))/den;
+    return [w1,w2,dw1,dw2]; };
+  const En=y=>{ const [a1,a2,w1,w2]=y; return w1*w1+0.5*w2*w2+w1*w2*Math.cos(a1-a2)-2*g*Math.cos(a1)-g*Math.cos(a2); };
+  function reset(){ const a=(+sA.value)*Math.PI/180, d=(+sD.value)*Math.PI/180; A=[a,a,0,0]; B=[a,a+d,0,0]; t=0; tr1=[]; tr2=[]; diff=[]; tsep=null; E0=En(A); }
+  reset();
+  S.cleanup.push(anim(dt=>{
+    for(let i=0;i<20;i++){ A=rk4(f,A,t,dt/20); B=rk4(f,B,t,dt/20); t+=dt/20; }
+    const dd=Math.abs(((B[1]-A[1])*180/Math.PI+540)%360-180); if(tsep===null && dd>10) tsep=t;
+    diff.push([t,dd]); if(diff.length>2000) diff.shift();
+    const {ctx,cv,v}=S; v.update(); S.clear();
+    const P=(y)=>{ const x1=Math.sin(y[0]), y1=-Math.cos(y[0]), x2=x1+Math.sin(y[1]), y2=y1-Math.cos(y[1]); return [[0,0.6],[x1,y1+0.6],[x2,y2+0.6]]; };
+    const pa=P(A), pb2=P(B);
+    tr1.push(pa[2]); tr2.push(pb2[2]); if(tr1.length>600){tr1.shift();tr2.shift();}
+    [[tr1,css('--vB')],[tr2,css('--vA')]].forEach(([tr,c])=>{ ctx.strokeStyle=c; ctx.globalAlpha=0.35; ctx.lineWidth=1.2; ctx.beginPath(); tr.forEach((p,i)=>i?ctx.lineTo(v.X(p[0]),v.Y(p[1])):ctx.moveTo(v.X(p[0]),v.Y(p[1]))); ctx.stroke(); ctx.globalAlpha=1; });
+    [[pa,css('--vB')],[pb2,css('--vA')]].forEach(([p,c])=>{ ctx.strokeStyle=c; ctx.lineWidth=2.5; ctx.beginPath(); p.forEach((q,i)=>i?ctx.lineTo(v.X(q[0]),v.Y(q[1])):ctx.moveTo(v.X(q[0]),v.Y(q[1]))); ctx.stroke(); ctx.fillStyle=c; [1,2].forEach(k=>{ ctx.beginPath(); ctx.arc(v.X(p[k][0]),v.Y(p[k][1]),8,0,7); ctx.fill(); }); });
+    ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(v.X(0),v.Y(0.6),4,0,7); ctx.fill();
+    pe([{pts:diff,color:css('--vD')}],{xmin:Math.max(0,t-30),xmax:Math.max(30,t),ymin:0,ymax:180,xl:'s'});
+    ro([['waktu', t.toFixed(1)+' s'],['selisih sudut bandul bawah', dd.toFixed(3)+'°'],['berpisah (> 10°) pada', tsep?tsep.toFixed(1)+' s':'belum'],['energi relatif E/E₀ − 1', (En(A)/E0-1).toExponential(2)]]);
+  }));
+};
+
+/* ===================== SIM-14.1 Osilator tergandeng ===================== */
+SIMS['SIM-14.1'] = function(){
+  const S = sim('SIM-14.1','Osilator Tergandeng dan Mode Normal',14,[
+    'Eksitasi mode 1 dan mode 2 terpisah; bandingkan frekuensinya dengan √(k/m) dan √((k+2k′)/m).',
+    'Simpangkan satu balok saja; ukur periode pertukaran energi dan bandingkan dengan 2π/(ω₂ − ω₁).',
+    'Perkecil k′. Apa yang terjadi pada periode layangan?'
+  ], 0.35);
+  const c1=card(S.side,'m = 0,5 kg');
+  const sK=slider(c1,'k','k (N/m)',10,100,1,50,x=>x.toFixed(0)), sC=slider(c1,'kc','k′ penggandeng (N/m)',0.5,50,0.5,10,x=>x.toFixed(1));
+  let ini='satu'; seg(c1,[['mode1','Mode 1 (searah)'],['mode2','Mode 2 (berlawanan)'],['satu','Satu balok saja']],ini,k=>{ini=k;reset();});
+  [sK,sC].forEach(s=>s.addEventListener('input',reset));
+  const ro=readout(S.side);
+  const px=makePlot(S.side,'x₁ (biru) dan x₂ (merah)',150), pn=makePlot(S.side,'Koordinat normal (x₁+x₂)/2 dan (x₁−x₂)/2',150);
+  let y,t,h;
+  function reset(){ y = ini==='mode1'?[0.3,0.3,0,0]:ini==='mode2'?[0.3,-0.3,0,0]:[0.3,0,0,0]; t=0; h=[]; }
+  reset();
+  S.cleanup.push(anim(dt=>{
+    const m=0.5,k=+sK.value,kc=+sC.value;
+    for(let i=0;i<10;i++){ y=rk4((t,y)=>[y[2],y[3],(-k*y[0]-kc*(y[0]-y[1]))/m,(-k*y[1]-kc*(y[1]-y[0]))/m],y,t,dt/10); t+=dt/10; }
+    h.push([t,y[0],y[1]]); if(h.length>900) h.shift();
+    const {ctx,cv}=S; S.clear(); const W=cv._w,H=cv._h, cy=H/2, sc=W*0.12, p1=W*0.33+y[0]*sc, p2=W*0.67+y[1]*sc;
+    const spring=(a,b,col)=>{ ctx.strokeStyle=col; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(a,cy); for(let i=1;i<=12;i++) ctx.lineTo(a+(b-a)*i/12, cy+(i%2?-8:8)*(i<12?1:0)); ctx.stroke(); };
+    ctx.fillStyle=css('--axis'); ctx.fillRect(4,cy-30,8,60); ctx.fillRect(W-12,cy-30,8,60);
+    spring(12,p1-18,css('--ink')); spring(p1+18,p2-18,css('--vD')); spring(p2+18,W-12,css('--ink'));
+    box(ctx,p1-18,cy-18,36,36,css('--vB'),null); box(ctx,p2-18,cy-18,36,36,css('--vA'),null);
+    const t0=h[0][0];
+    px([{pts:h.map(q=>[q[0],q[1]]),color:css('--vB')},{pts:h.map(q=>[q[0],q[2]]),color:css('--vA')}],{xmin:t0,xmax:Math.max(t0+1,t),ymin:-0.35,ymax:0.35,xl:'s'});
+    pn([{pts:h.map(q=>[q[0],(q[1]+q[2])/2]),color:css('--vR'),label:'mode 1'},{pts:h.map(q=>[q[0],(q[1]-q[2])/2]),color:css('--vAcc'),label:'mode 2'}],{xmin:t0,xmax:Math.max(t0+1,t),ymin:-0.35,ymax:0.35,xl:'s'});
+    const w1=Math.sqrt(k/m), w2=Math.sqrt((k+2*kc)/m);
+    ro([['ω₁ = √(k/m)', w1.toFixed(2)+' rad/s'],['ω₂ = √((k+2k′)/m)', w2.toFixed(2)+' rad/s'],['periode layangan 2π/(ω₂−ω₁)', (2*Math.PI/(w2-w1)).toFixed(2)+' s']]);
+  }));
+};
+
+/* ===================== SIM-14.2 Ruang fase bandul ===================== */
+SIMS['SIM-14.2'] = function(){
+  const S = sim('SIM-14.2','Ruang Fase Bandul',14,[
+    'Ketuk titik-titik di dekat pusat ruang fase. Bentuk apa yang Anda lihat?',
+    'Cari separatriks dengan mencoba energi yang makin besar.',
+    'Mulai tepat di separatriks (tombol). Berapa lama bandul mencapai puncak?'
+  ], 0.62);
+  const c1=card(S.side,'Bandul: m = 1 kg, l = 1 m; H = p²/2ml² − mgl cos θ');
+  buttons(c1,[['Mulai di separatriks',()=>{ y=[0,2*Math.sqrt(G0)*0.99999]; tr=[]; t=0; }],['Hapus jejak',()=>{tr=[];},true]]);
+  const ro=readout(S.side);
+  let y=[1,0], tr=[], t=0;
+  const pmax=9;
+  S.cv.addEventListener('pointerdown',e=>{ const r=S.cv.getBoundingClientRect(), W=S.cv._w*0.7, H=S.cv._h; const px=e.clientX-r.left, py=e.clientY-r.top; if(px>W) return; y=[(px/W*2-1)*Math.PI, (1-py/H*2)*pmax]; tr=[]; t=0; });
+  const Hf=(th,p)=>p*p/2-G0*Math.cos(th);
+  S.cleanup.push(anim(dt=>{
+    for(let i=0;i<10;i++){ y=rk4((t,y)=>[y[1],-G0*Math.sin(y[0])],y,t,dt/10); t+=dt/10; }
+    let th=((y[0]+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
+    tr.push([th,y[1]]); if(tr.length>1500) tr.shift();
+    const {ctx,cv}=S; S.clear(); const W=cv._w*0.7, H=cv._h;
+    const X=a=>(a/Math.PI+1)/2*W, Y=p=>(1-p/pmax)/2*H;
+    ctx.strokeStyle=css('--axis'); ctx.beginPath(); ctx.moveTo(0,Y(0)); ctx.lineTo(W,Y(0)); ctx.moveTo(X(0),0); ctx.lineTo(X(0),H); ctx.stroke();
+    [-8,-5,-2,1,4,7,9.8,13,18,25,35].forEach(E=>{ const sep=Math.abs(E-G0)<0.01; ctx.strokeStyle=sep?css('--vA'):css('--grid'); ctx.lineWidth=sep?2:1.2;
+      [1,-1].forEach(sg=>{ ctx.beginPath(); let st=false; for(let i=0;i<=400;i++){ const a=-Math.PI+i*2*Math.PI/400, q=2*(E+G0*Math.cos(a)); if(q<0){st=false;continue;} const p=sg*Math.sqrt(q); if(!st){ctx.moveTo(X(a),Y(p));st=true;} else ctx.lineTo(X(a),Y(p)); } ctx.stroke(); }); });
+    ctx.strokeStyle=css('--vB'); ctx.lineWidth=2; ctx.beginPath(); tr.forEach((q,i)=>{ if(i&&Math.abs(q[0]-tr[i-1][0])>3){ ctx.moveTo(X(q[0]),Y(q[1])); } else i?ctx.lineTo(X(q[0]),Y(q[1])):ctx.moveTo(X(q[0]),Y(q[1])); }); ctx.stroke();
+    ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(X(th),Y(y[1]),5,0,7); ctx.fill();
+    txt(ctx,'θ',W-12,Y(0)-6,css('--muted')); txt(ctx,'p_θ',X(0)+6,14,css('--muted')); txt(ctx,'merah: separatriks (E = mgl)',8,H-8,css('--vA'),'11px system-ui');
+    const cx=W+(cv._w-W)/2, cy=H*0.35, L=Math.min(cv._w-W,H)*0.4;
+    ctx.strokeStyle=css('--ink'); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+L*Math.sin(y[0]),cy+L*Math.cos(y[0])); ctx.stroke();
+    ctx.fillStyle=css('--accent'); ctx.beginPath(); ctx.arc(cx+L*Math.sin(y[0]),cy+L*Math.cos(y[0]),10,0,7); ctx.fill();
+    const E=Hf(y[0],y[1]);
+    ro([['energi H', E.toFixed(2)+' J'],['energi separatriks mgl', G0.toFixed(2)+' J'],['jenis gerak', Math.abs(E-G0)<0.05?'di separatriks':E<G0?'<b>librasi</b> (berayun)':'<b>rotasi</b> (berputar penuh)'],['petunjuk','ketuk ruang fase untuk memulai']]);
+  }));
+};
+
+
+route();
+</script>
+</body>
+</html>
